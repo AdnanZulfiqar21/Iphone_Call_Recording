@@ -1,0 +1,36 @@
+name: Toolchain probe
+on:
+  push:
+    branches: [phase/p00-foundation]
+    paths: ['.github/workflows/toolchain-probe.yml']
+  workflow_dispatch:
+concurrency:
+  group: probe-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26, macos-27]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - name: Report toolchain
+        run: |
+          sw_vers
+          echo "--- Installed Xcodes"; ls -d /Applications/Xcode* || true
+          echo "--- Selected"; xcodebuild -version
+          echo "--- SDKs"; xcodebuild -showsdks
+          echo "--- Simulator runtimes"; xcrun simctl list runtimes
+          echo "--- iPhone device types"; xcrun simctl list devicetypes | grep -i iphone | tail -25
+          echo "--- Tools"; which xcodegen swiftlint brew || true; swift --version
+      - name: Check ScreenCaptureKit / ReplayKit availability in iOS SDK
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path); echo "$SDK"
+          ls "$SDK/System/Library/Frameworks" | grep -Ei 'ScreenCaptureKit|ReplayKit|ActivityKit|StoreKit' || true
+          H="$SDK/System/Library/Frameworks/ScreenCaptureKit.framework/Headers"
+          if [ -d "$H" ]; then ls "$H"; grep -h "API_AVAILABLE\|API_UNAVAILABLE" "$H"/SCStream.h | grep -i ios | head -20; grep -l SCRecordingOutput "$H"/*.h; grep -hi "picker" "$H"/*.h | head -20; else echo "No ScreenCaptureKit headers in iOS SDK"; fi
+          IF="$SDK/System/Library/Frameworks/ScreenCaptureKit.framework/Modules"; ls -R "$IF" 2>/dev/null | head -20 || true
