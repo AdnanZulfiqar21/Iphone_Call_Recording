@@ -149,6 +149,21 @@ public enum RecordingValidator {
             }
             return report
         }
+        if from == 0 {
+            // Holes are recorded in the master as empty edits. A decoding reader may render those as
+            // silence, so the edit list itself is inspected: every empty segment is a known hole.
+            for (index, track) in tracks.enumerated() where index < sources.count && sources[index].isAudio {
+                let segments = try await track.load(.segments)
+                for seg in segments where seg.isEmpty {
+                    let r = seg.timeMapping.target
+                    guard r.duration.seconds > gapTolerance else { continue }
+                    let hole = MediaRange(startSeconds: r.start.seconds, endSeconds: CMTimeRangeGetEnd(r).seconds)
+                    report.detectedRanges.append(hole)
+                    report.sourceRanges = report.sourceRanges ?? [:]
+                    report.sourceRanges?[sources[index].rawValue, default: []].append(hole)
+                }
+            }
+        }
         for (index, track) in tracks.enumerated() where index < sources.count {
             let reader = try AVAssetReader(asset: asset)
             let output = AVAssetReaderTrackOutput(track: track, outputSettings: track.mediaType == .video
@@ -167,7 +182,8 @@ public enum RecordingValidator {
             let isAudio = sources[index].isAudio
             while let buffer = output.copyNextSampleBuffer() {
                 let r = SampleBufferInspector.range(of: buffer)
-                if isAudio && r.start.seconds - expected > gapTolerance {
+                if isAudio && r.start.seconds - expected > gapTolerance
+                    && !(report.sourceRanges?[sources[index].rawValue] ?? []).contains(where: { abs($0.start.seconds - expected) < 0.25 }) {
                     let hole = MediaRange(startSeconds: expected, endSeconds: r.start.seconds)
                     report.detectedRanges.append(hole)
                     report.sourceRanges = report.sourceRanges ?? [:]

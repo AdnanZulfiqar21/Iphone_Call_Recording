@@ -102,7 +102,7 @@ jobs:
           set -o pipefail
           xcodebuild test-without-building -project CallCapture.xcodeproj -scheme CallCapture             -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath /tmp/dd-app -resultBundlePath SmallScreen.xcresult             -only-testing:CallCaptureUITests/CallCaptureUITests/testRecordStopAndSave             -only-testing:CallCaptureUITests/CallCaptureUITests/testLargestTextDarkModeKeepsStop             -only-testing:CallCaptureUITests/CallCaptureUITests/testOnboardingAndSetup             2>&1 | tee small-screen.log | grep -E "Test Case .* (passed|failed)|error:|TEST (SUCCEEDED|FAILED)" || true
           mkdir -p screenshots-small && xcrun xcresulttool export attachments --path SmallScreen.xcresult --output-path screenshots-small || true
-          grep -q "TEST SUCCEEDED" small-screen.log
+          grep -Eq "TEST (EXECUTE )?SUCCEEDED" small-screen.log
       - name: Unsigned Release build for iOS devices
         if: always()
         run: |
