@@ -259,10 +259,10 @@ final class TrackWriter: NSObject, AVAssetWriterDelegate, @unchecked Sendable {
             if let finishing { return finishing }
             let shouldFinish = !closed && writer.status == .writing
             closed = true
-            let t = Task { [writer, input] in
+            let t = Task { [self] in
                 guard shouldFinish else { return }
-                input.markAsFinished()
-                await writer.finishWriting()
+                self.input.markAsFinished()
+                await self.writer.finishWriting()
             }
             finishing = t
             return t
