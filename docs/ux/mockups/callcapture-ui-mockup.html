@@ -1,0 +1,435 @@
+<title>CallCapture Screen Mockups</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design board — short intro, then a wrapping wall of iPhone frames grouped by journey, each captioned with the roadmap rule it demonstrates. */
+:root{
+  --bg:#EEF0F7; --ink:#161A2E; --muted:#5A6079; --line:#D5D9E8;
+  --accent:#3B4FD8; --rec:#D92D20; --amber:#B54708; --amberFill:#FEF0C7; --green:#067647; --unknown:#667085;
+  --p-bg:#F2F2F7; --p-card:#FFFFFF; --p-ink:#0B0D17; --p-muted:#6B7085; --p-sep:#E3E4EA; --p-tint:#E8EBFF;
+  --frame:#1B1E2B;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --ios:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1020; --ink:#E9EBF5; --muted:#9BA1BC; --line:#272B44;
+  --accent:#7C8CFF; --rec:#FF5A4E; --amber:#FDB022; --amberFill:#3A2A0A; --green:#47CD89; --unknown:#98A2B3;
+  --p-bg:#000000; --p-card:#1C1C1E; --p-ink:#F5F5F7; --p-muted:#9A9AA3; --p-sep:#2C2C30; --p-tint:#1E2250;
+  --frame:#3A3E52; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1020; --ink:#E9EBF5; --muted:#9BA1BC; --line:#272B44;
+  --accent:#7C8CFF; --rec:#FF5A4E; --amber:#FDB022; --amberFill:#3A2A0A; --green:#47CD89; --unknown:#98A2B3;
+  --p-bg:#000000; --p-card:#1C1C1E; --p-ink:#F5F5F7; --p-muted:#9A9AA3; --p-sep:#2C2C30; --p-tint:#1E2250;
+  --frame:#3A3E52; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:40px 64px}
+header.top{display:flex;flex-wrap:wrap;gap:20px;align-items:end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(32px,5vw,52px);line-height:1.05;margin:6px 0 10px;text-wrap:balance;letter-spacing:-.01em}
+.lede{max-width:62ch;color:var(--muted);margin:0}
+.toggle{display:flex;gap:4px;background:var(--p-card);border:1px solid var(--line);border-radius:999px;padding:4px}
+.toggle button{font:500 13px var(--body);border:0;background:transparent;color:var(--muted);padding:7px 14px;border-radius:999px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.toggle button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{margin-top:14px;font-size:13px;color:var(--muted)}
+.note b{color:var(--ink);font-weight:600}
+section.journey{margin-top:44px}
+section.journey h2{font-family:var(--display);font-weight:500;font-size:24px;margin:0 0 4px}
+section.journey > p{margin:0 0 20px;color:var(--muted);max-width:70ch}
+.board{display:flex;flex-wrap:wrap;gap:28px}
+figure{margin:0;width:286px;max-width:100%;display:flex;flex-direction:column;gap:12px}
+figcaption{font-size:13px;color:var(--muted);min-width:0}
+figcaption strong{display:block;color:var(--ink);font-weight:600;font-size:14px}
+figcaption code{font-family:var(--mono);font-size:11.5px;color:var(--accent)}
+
+/* iPhone frame */
+.phone{width:286px;max-width:100%;aspect-ratio:286/600;background:var(--frame);border-radius:46px;padding:9px;box-shadow:0 18px 40px -18px rgba(20,24,60,.45)}
+.screen{position:relative;height:100%;border-radius:38px;overflow:hidden;background:var(--p-bg);color:var(--p-ink);font-family:var(--ios);font-size:13px;display:flex;flex-direction:column}
+.status{display:flex;justify-content:space-between;align-items:center;padding:12px 24px 4px;font-size:12px;font-weight:600}
+.island{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:84px;height:24px;background:#000;border-radius:14px;display:flex;align-items:center;justify-content:flex-end;padding-right:9px}
+.island i{width:7px;height:7px;border-radius:50%;background:var(--rec)}
+.content{flex:1;overflow:hidden;padding:6px 14px 0;display:flex;flex-direction:column;gap:10px;min-height:0}
+.ltitle{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:4px 2px 0}
+.card{background:var(--p-card);border-radius:14px;padding:11px 12px}
+.list{background:var(--p-card);border-radius:14px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--p-sep);min-height:44px;box-sizing:border-box}
+.row:last-child{border-bottom:0}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{color:var(--p-muted);font-size:11.5px}
+.chev{color:var(--p-muted);font-size:14px}
+.ico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none}
+.ico svg{width:15px;height:15px}
+.pill{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.pill.ok{color:var(--green);background:color-mix(in srgb,var(--green) 14%,transparent)}
+.pill.warn{color:var(--amber);background:var(--amberFill)}
+.pill.unk{color:var(--unknown);background:color-mix(in srgb,var(--unknown) 16%,transparent)}
+.pill.rec{color:var(--rec);background:color-mix(in srgb,var(--rec) 13%,transparent)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:16px;font:600 16px var(--ios);min-height:56px;width:100%;cursor:pointer}
+.btn.start{background:var(--rec);color:#fff}
+.btn.primary{background:var(--accent);color:#fff;min-height:48px;font-size:15px}
+.btn.ghost{background:var(--p-tint);color:var(--accent);min-height:44px;font-size:14px}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.notice{display:flex;gap:9px;align-items:flex-start;background:var(--amberFill);color:var(--p-ink);border-radius:12px;padding:9px 11px;font-size:12px;line-height:1.35}
+.notice svg{flex:none;width:15px;height:15px;color:var(--amber);margin-top:1px}
+.tabbar{display:flex;justify-content:space-around;border-top:1px solid var(--p-sep);background:var(--p-card);padding:7px 0 18px;font-size:10px;color:var(--p-muted)}
+.tabbar span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabbar span.on{color:var(--accent)}
+.tabbar svg{width:20px;height:20px}
+.strip{display:flex;align-items:center;gap:8px;background:var(--rec);color:#fff;font-size:11.5px;font-weight:600;padding:6px 12px;margin:0 10px;border-radius:12px}
+.strip .s{margin-left:auto;background:rgba(255,255,255,.22);padding:2px 9px;border-radius:999px}
+.timer{font-size:52px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-align:center;margin:2px 0 0}
+.state{display:flex;align-items:center;justify-content:center;gap:7px;font-weight:600;font-size:14px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--rec)}
+@media (prefers-reduced-motion:no-preference){.dot.live{animation:blink 1.6s ease-in-out infinite}}
+@keyframes blink{50%{opacity:.35}}
+.meter{display:flex;gap:2px;align-items:end;height:18px}
+.meter b{width:3px;border-radius:2px;background:var(--accent);display:block}
+.timeline{position:relative;height:30px;background:var(--p-tint);border-radius:8px;overflow:hidden}
+.timeline .gap{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,var(--amberFill) 0 4px,color-mix(in srgb,var(--amber) 35%,transparent) 4px 7px)}
+.timeline .head{position:absolute;top:0;bottom:0;width:2px;background:var(--accent)}
+.wave{position:absolute;inset:4px 0;display:flex;gap:1px;align-items:center}
+.wave b{flex:1;background:color-mix(in srgb,var(--accent) 55%,transparent);border-radius:1px}
+.hero-ico{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;margin:10px auto 0}
+.center{text-align:center}
+.h2{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:0}
+.muted{color:var(--p-muted)}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:3px 0}
+.kv span:last-child{font-variant-numeric:tabular-nums;font-weight:500}
+.search{background:color-mix(in srgb,var(--p-muted) 14%,transparent);border-radius:10px;padding:7px 10px;color:var(--p-muted);font-size:12.5px;display:flex;gap:6px;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11px;font-weight:500;padding:4px 10px;border-radius:999px;background:var(--p-card);color:var(--p-ink);border:1px solid var(--p-sep)}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg{display:flex;background:color-mix(in srgb,var(--p-muted) 14%,transparent);border-radius:9px;padding:2px;font-size:11.5px}
+.seg span{flex:1;text-align:center;padding:5px 0;border-radius:7px}
+.seg span.on{background:var(--p-card);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.transport{display:flex;justify-content:center;align-items:center;gap:26px}
+.transport .play{width:58px;height:58px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff}
+.small{font-size:11px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:4px;display:inline-block}
+footer{margin-top:22px;font-size:12.5px;color:var(--muted);max-width:80ch}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="currentColor"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="4" cy="6" r="1.4" fill="currentColor"/><circle cx="4" cy="12" r="1.4" fill="currentColor"/><circle cx="4" cy="18" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-screen" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 18.5h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-spk" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-recover" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></symbol>
+  <symbol id="i-bm" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z" fill="currentColor"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2.5" fill="currentColor"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2" fill="none"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">CallCapture · Roadmap v2.2 · section 14.12 reference</div>
+      <h1>CallCapture screen mockups</h1>
+      <p class="lede">How the finished V1 iPhone app is planned to look: Record, Recordings and Settings tabs, honest recording states, partial-result handling, recovery and the library player. All data shown is sample data.</p>
+    </div>
+    <div class="toggle" role="group" aria-label="Appearance">
+      <button type="button" id="t-sys" aria-pressed="true">System</button>
+      <button type="button" id="t-light" aria-pressed="false">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+  </header>
+  <p class="note"><b>Design illustration only.</b> These frames do not show implemented or device-tested behaviour. Try the Stop button on the active recording screen to see the stop → saving → saved sequence.</p>
+
+  <!-- Journey 1 -->
+  <section class="journey">
+    <h2>First launch and setup</h2>
+    <p>No account and no burst of permission requests. The consent notice informs without blocking, and "Test My Setup" shows the evidence level of every check.</p>
+    <div class="board">
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+          <div class="content" style="justify-content:space-between;padding-bottom:22px">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="hero-ico" style="background:var(--p-tint);color:var(--accent)"><svg width="30" height="30"><use href="#i-rec"/></svg></div>
+              <p class="h2 center" style="font-size:22px">Record what matters,<br>know what you got</p>
+              <p class="center muted" style="margin:0;font-size:12.5px">CallCapture records your screen and available audio, then tells you plainly which sources were captured and where anything is missing.</p>
+              <div class="card" style="display:flex;flex-direction:column;gap:7px;font-size:12px">
+                <div style="display:flex;gap:8px"><svg width="15" height="15" style="color:var(--green);flex:none"><use href="#i-check"/></svg>Recordings stay on this iPhone</div>
+                <div style="display:flex;gap:8px"><svg width="15" height="15" style="color:var(--green);flex:none"><use href="#i-check"/></svg>No account needed</div>
+                <div style="display:flex;gap:8px"><svg width="15" height="15" style="color:var(--unknown);flex:none"><use href="#i-q"/></svg>Call audio depends on the app and route. We check each time.</div>
+              </div>
+              <div class="notice"><svg><use href="#i-warn"/></svg><span>Recording laws differ by place. Tell the people you record and follow local law.</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn primary" type="button">Test my setup</button>
+              <div class="center small muted">Skip for now</div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><strong>Welcome</strong>Honest capability summary, non-blocking consent notice. <code>§14.3 · §13.2</code></figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+          <div class="content">
+            <div class="muted small" style="margin-top:2px">‹ Back</div>
+            <div class="ltitle" style="font-size:22px">Test my setup</div>
+            <div class="list">
+              <div class="row"><div class="ico" style="background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)"><svg><use href="#i-check"/></svg></div><div class="grow"><div class="t">Storage</div><div class="sub">41 GB free · about 6 h at standard quality</div></div></div>
+              <div class="row"><div class="ico" style="background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)"><svg><use href="#i-mic"/></svg></div><div class="grow"><div class="t">Microphone</div><div class="sub">Allowed · test sound detected</div></div></div>
+              <div class="row"><div class="ico" style="background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)"><svg><use href="#i-screen"/></svg></div><div class="grow"><div class="t">Screen capture</div><div class="sub">10-second test recording saved</div></div></div>
+              <div class="row"><div class="ico" style="background:color-mix(in srgb,var(--unknown) 16%,transparent);color:var(--unknown)"><svg><use href="#i-spk"/></svg></div><div class="grow"><div class="t">Call audio</div><div class="sub">Can only be confirmed during a real call</div></div><span class="pill unk">Unconfirmed</span></div>
+            </div>
+            <div class="card small muted">3 of 4 checks passed on this iPhone today. Passing checks do not promise that a future call's audio will be captured.</div>
+            <button class="btn ghost" type="button">Play test recording</button>
+          </div>
+        </div></div>
+        <figcaption><strong>Setup guide</strong>Unknown stays neutral, never green. <code>§14.4 · UX06 · UX10</code></figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+          <div class="content">
+            <div class="ltitle">Record</div>
+            <div class="card" style="display:flex;flex-direction:column;gap:4px">
+              <div class="kv"><span class="muted">Capture</span><span>Full screen + microphone</span></div>
+              <div class="kv"><span class="muted">Setup</span><span style="color:var(--accent)">3 of 4 checks ›</span></div>
+              <div class="kv"><span class="muted">Space</span><span>About 6 h free</span></div>
+            </div>
+            <div class="notice" style="background:var(--p-tint)"><svg style="color:var(--accent)"><use href="#i-q"/></svg><span>Full-screen recording includes notifications and other apps you open.</span></div>
+            <button class="btn start" type="button"><svg width="22" height="22"><use href="#i-rec"/></svg>Start recording</button>
+            <div class="small muted" style="margin:2px 2px -4px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Recent</div>
+            <div class="list">
+              <div class="row"><div class="grow"><div class="t">Supplier call — pricing</div><div class="sub">Today 14:02 · 32:05</div></div><span class="pill warn">Partial</span></div>
+              <div class="row"><div class="grow"><div class="t">Interview with Sana</div><div class="sub">Yesterday · 18:22</div></div><span class="pill ok">Saved</span></div>
+            </div>
+          </div>
+          <div class="tabbar"><span class="on"><svg><use href="#i-rec"/></svg>Record</span><span><svg><use href="#i-list"/></svg>Recordings</span><span><svg><use href="#i-gear"/></svg>Settings</span></div>
+        </div></div>
+        <figcaption><strong>Record dashboard</strong>One dominant Start action, scope visible before starting. <code>§14.3 · UX05</code></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Journey 2 -->
+  <section class="journey">
+    <h2>Recording, stopping and the saved result</h2>
+    <p>The timer counts real capture time only. Current source health and earlier gaps are shown separately, and a gap stays visible after audio comes back.</p>
+    <div class="board">
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="island"><i></i></div>
+          <div class="status"><span>9:41</span><span>●●● 92%</span></div>
+          <div class="content" id="active">
+            <div class="state" id="a-state" style="margin-top:14px"><span class="dot live" id="a-dot"></span><span id="a-label">Recording</span></div>
+            <div class="timer" id="a-timer" aria-label="Elapsed recording time">12:48</div>
+            <div class="list" id="a-sources">
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-screen"/></svg></div><div class="grow"><div class="t">Screen</div><div class="sub">Updated just now</div></div><span class="pill ok">Capturing</span></div>
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-mic"/></svg></div><div class="grow"><div class="t">Microphone</div><div class="sub" style="display:flex;gap:6px;align-items:center">Input level <span class="meter" id="meter" aria-hidden="true"></span></div></div><span class="pill ok">Detected</span></div>
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-spk"/></svg></div><div class="grow"><div class="t">App audio</div><div class="sub">No audio received yet</div></div><span class="pill unk">Unconfirmed</span></div>
+            </div>
+            <div class="notice" id="a-gap"><svg><use href="#i-warn"/></svg><span>Microphone audio is back. An earlier part is missing: 04:10–04:20.</span></div>
+            <div style="margin-top:auto;padding-bottom:22px">
+              <button class="btn start" type="button" id="stop"><svg width="20" height="20"><use href="#i-stop"/></svg><span id="stop-l">Stop recording</span></button>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><strong>Active recording (interactive)</strong>Large timer, labelled Stop, persistent gap notice. Tap Stop. <code>§14.5 · UX06 · UX07</code></figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 92%</span></div>
+          <div class="content">
+            <div class="hero-ico" style="background:var(--amberFill);color:var(--amber);margin-top:16px"><svg width="28" height="28"><use href="#i-warn"/></svg></div>
+            <p class="h2 center">Saved with missing sections</p>
+            <p class="center muted small" style="margin:-4px 0 0">Supplier call — pricing · 32:05 · 214 MB</p>
+            <div class="timeline" aria-label="Recording timeline with one missing section from 04:10 to 04:20">
+              <div class="wave" id="wave1"></div>
+              <div class="gap" style="left:12.8%;width:2.6%"></div>
+            </div>
+            <div class="list">
+              <div class="row"><div class="grow"><div class="t">Microphone audio</div><div class="sub">Missing 04:10–04:20 (10 s)</div></div><span class="pill warn">Partial</span></div>
+              <div class="row"><div class="grow"><div class="t">App audio</div><div class="sub">Not received during this recording</div></div><span class="pill unk">Unconfirmed</span></div>
+              <div class="row"><div class="grow"><div class="t">File checks</div><div class="sub">Basic checks passed · full checks pending</div></div><span class="pill ok">Basic</span></div>
+            </div>
+            <div style="display:flex;gap:8px"><button class="btn primary" type="button"><svg width="16" height="16"><use href="#i-play"/></svg>Play</button><button class="btn ghost" type="button" style="min-height:48px"><svg width="16" height="16"><use href="#i-share"/></svg>Share</button></div>
+            <div class="center small" style="color:var(--accent);font-weight:600">Review missing sections ›</div>
+          </div>
+        </div></div>
+        <figcaption><strong>Saved result — partial</strong>No celebration for incomplete media; limits stay attached. <code>§14.3 · §7 · UX06</code></figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 88%</span></div>
+          <div class="content">
+            <div class="ltitle">Recordings</div>
+            <div class="card" style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--p-sep)">
+              <div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-recover"/></svg></div>
+              <div class="grow" style="min-width:0">
+                <div style="font-weight:600">1 recording can be recovered</div>
+                <div class="sub">CallCapture closed unexpectedly at 15:47. 21:30 of media was saved before that.</div>
+                <div style="display:flex;gap:8px;margin-top:8px"><button class="btn primary" type="button" style="min-height:36px;font-size:13px;border-radius:10px">Recover</button><button class="btn ghost" type="button" style="min-height:36px;font-size:13px;border-radius:10px">Details</button></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="kv"><span class="muted">Recovered</span><span>21:30 of media</span></div>
+              <div class="kv"><span class="muted">Tail</span><span style="color:var(--amber)">Last ≈ 4 s may be missing</span></div>
+              <div class="kv"><span class="muted">Original files</span><span>Kept until recovery is checked</span></div>
+            </div>
+            <p class="small muted" style="margin:0 2px">Recording did not continue after the app closed. Start a new recording if you need to.</p>
+          </div>
+          <div class="tabbar"><span><svg><use href="#i-rec"/></svg>Record</span><span class="on"><svg><use href="#i-list"/></svg>Recordings</span><span><svg><use href="#i-gear"/></svg>Settings</span></div>
+        </div></div>
+        <figcaption><strong>Recovery</strong>Never implies capture continued after termination. <code>§8 · §11 · UX11</code></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Journey 3 -->
+  <section class="journey">
+    <h2>Library, player and settings</h2>
+    <p>Text-first rows with outcome labels, local search and filters, a player built from real saved media with labelled gaps, and native grouped settings where Pro is optional.</p>
+    <div class="board">
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="strip"><span class="dot" style="background:#fff"></span>Recording 12:48<span class="s">Stop</span></div>
+          <div class="content">
+            <div class="ltitle">Recordings</div>
+            <div class="search">⌕ Search titles</div>
+            <div class="chips"><span class="chip on">All</span><span class="chip">Partial</span><span class="chip">Recovered</span><span class="chip">Bookmarked</span></div>
+            <div class="list">
+              <div class="row"><div class="grow"><div class="t">Supplier call — pricing</div><div class="sub">1 Oct · 32:05</div></div><span class="pill warn">Partial</span><span class="chev">›</span></div>
+              <div class="row"><div class="grow"><div class="t">Interview with Sana</div><div class="sub">30 Sep · 18:22</div></div><span class="pill ok">Saved</span><span class="chev">›</span></div>
+              <div class="row"><div class="grow"><div class="t">Weekly planning (recovered)</div><div class="sub">29 Sep · 21:30</div></div><span class="pill unk">Recovered</span><span class="chev">›</span></div>
+              <div class="row"><div class="grow"><div class="t">دادی جان سے بات چیت — family call</div><div class="sub">27 Sep · 44:10</div></div><span class="pill ok">Saved</span><span class="chev">›</span></div>
+              <div class="row"><div class="grow"><div class="t">Landlord — deposit return discussion and agreed dates</div><div class="sub">22 Sep · 09:47</div></div><span class="pill ok">Saved</span><span class="chev">›</span></div>
+            </div>
+          </div>
+          <div class="tabbar"><span><svg><use href="#i-rec"/></svg>Record</span><span class="on"><svg><use href="#i-list"/></svg>Recordings</span><span><svg><use href="#i-gear"/></svg>Settings</span></div>
+        </div></div>
+        <figcaption><strong>Library + active-session strip</strong>Outcome filters, Unicode titles, route back to Stop. <code>§14.3 · UX12 · UX14</code></figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 88%</span></div>
+          <div class="content">
+            <div class="muted small" style="display:flex;justify-content:space-between"><span style="color:var(--accent)">‹ Recordings</span><span style="color:var(--accent)">Edit</span></div>
+            <div class="h2" style="font-size:18px">Supplier call — pricing</div>
+            <div class="sub" style="margin-top:-6px">1 Oct 2026, 14:02 · Saved with missing sections</div>
+            <div class="timeline" style="height:54px" aria-label="Waveform from saved audio with a missing section at 04:10">
+              <div class="wave" id="wave2"></div>
+              <div class="gap" style="left:12.8%;width:2.6%"></div>
+              <div class="head" style="left:34%"></div>
+            </div>
+            <div class="kv small muted"><span>10:54</span><span>−21:11</span></div>
+            <div class="transport">
+              <span class="small muted">−15</span>
+              <span class="play" aria-label="Play"><svg width="24" height="24"><use href="#i-play"/></svg></span>
+              <span class="small muted">+15</span>
+            </div>
+            <div class="small muted" style="font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin:4px 2px -4px">Markers</div>
+            <div class="list">
+              <div class="row"><div class="ico" style="background:var(--amberFill);color:var(--amber)"><svg><use href="#i-warn"/></svg></div><div class="grow"><div class="t">Missing microphone audio</div><div class="sub">04:10–04:20</div></div></div>
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-bm"/></svg></div><div class="grow"><div class="t">Price agreed</div><div class="sub">18:36</div></div></div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><strong>Player</strong>Waveform from saved media only; the gap is drawn as a gap, with a text list of markers. <code>§14.6 · UX13</code></figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 88%</span></div>
+          <div class="content">
+            <div class="ltitle">Settings</div>
+            <div class="seg" aria-label="Appearance"><span class="on">System</span><span>Light</span><span>Dark</span></div>
+            <div class="list">
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-rec"/></svg></div><div class="grow t">Capture preferences</div><span class="chev">›</span></div>
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-list"/></svg></div><div class="grow"><div class="t">Storage</div><div class="sub">1.8 GB used · 41 GB free</div></div><span class="chev">›</span></div>
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-lock"/></svg></div><div class="grow"><div class="t">Privacy &amp; App Lock</div><div class="sub">Face ID off</div></div><span class="chev">›</span></div>
+              <div class="row"><div class="ico" style="background:var(--p-tint);color:var(--accent)"><svg><use href="#i-q"/></svg></div><div class="grow t">Help &amp; recording laws</div><span class="chev">›</span></div>
+            </div>
+            <div class="card" style="border:1px solid var(--p-sep)">
+              <div style="font-weight:600">CallCapture Pro</div>
+              <div class="sub" style="margin:3px 0 8px">Advanced organisation, export presets and detailed history. One-time purchase. Recording, warnings and your files stay free.</div>
+              <button class="btn primary" type="button" style="min-height:40px;font-size:13.5px;border-radius:11px">Unlock for Rs 2,900</button>
+              <div class="center small" style="color:var(--accent);margin-top:7px">Restore purchases</div>
+            </div>
+          </div>
+          <div class="tabbar"><span><svg><use href="#i-rec"/></svg>Record</span><span><svg><use href="#i-list"/></svg>Recordings</span><span class="on"><svg><use href="#i-gear"/></svg>Settings</span></div>
+        </div></div>
+        <figcaption><strong>Settings and Pro</strong>Localized StoreKit price (sample), restore, nothing essential paywalled. <code>§14.3 · §21 · UX15</code></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <div class="legend" aria-label="Colour meaning">
+    <span><i class="sw" style="background:var(--rec)"></i>Recording and Stop only</span>
+    <span><i class="sw" style="background:var(--amber)"></i>Limited, partial or missing</span>
+    <span><i class="sw" style="background:var(--green)"></i>A specific check passed</span>
+    <span><i class="sw" style="background:var(--unknown)"></i>Checking or unconfirmed</span>
+    <span><i class="sw" style="background:var(--accent)"></i>Navigation and ordinary actions</span>
+  </div>
+  <footer>Colour values are the roadmap's proposed starting points and still need contrast measurement in P02/P10. Prices, titles and durations are illustrative. The real app uses SF Pro, native SwiftUI controls and Dynamic Type.</footer>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, ids={sys:'t-sys',light:'t-light',dark:'t-dark'};
+  function setTheme(m){
+    if(m==='sys'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',m)}
+    Object.keys(ids).forEach(function(k){document.getElementById(ids[k]).setAttribute('aria-pressed',String(k===m))});
+  }
+  Object.keys(ids).forEach(function(k){document.getElementById(ids[k]).addEventListener('click',function(){setTheme(k)})});
+
+  // Sample waveform bars (illustrative); bars inside the gap are omitted so no audio is drawn there.
+  function wave(id,n){
+    var el=document.getElementById(id), seed=7;
+    for(var i=0;i<n;i++){
+      seed=(seed*9301+49297)%233280; var r=seed/233280;
+      var b=document.createElement('b'); var pos=i/n;
+      var inGap=pos>=0.128&&pos<=0.154;
+      b.style.height=inGap?'0':(18+Math.round(r*78))+'%';
+      el.appendChild(b);
+    }
+  }
+  wave('wave1',90); wave('wave2',110);
+
+  // Meter: sample levels at ≤10 Hz, labelled "Input level".
+  var meter=document.getElementById('meter'), bars=[];
+  for(var i=0;i<8;i++){var b=document.createElement('b');b.style.height='4px';meter.appendChild(b);bars.push(b)}
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var t=12*60+48, running=true;
+  var timer=document.getElementById('a-timer');
+  function fmt(s){var m=Math.floor(s/60),x=s%60;return (m<10?'0':'')+m+':'+(x<10?'0':'')+x}
+  setInterval(function(){ if(running){t++;timer.textContent=fmt(t)} },1000);
+  if(!reduce){setInterval(function(){ if(!running)return; bars.forEach(function(b){b.style.height=(3+Math.round(Math.random()*15))+'px'}) },120)}
+  else{bars.forEach(function(b,i){b.style.height=(5+i%4*3)+'px'})}
+
+  var stop=document.getElementById('stop'), label=document.getElementById('a-label'), dot=document.getElementById('a-dot'), sl=document.getElementById('stop-l');
+  stop.addEventListener('click',function(){
+    if(!running){ // reset demo
+      running=true; t=12*60+48; label.textContent='Recording'; dot.className='dot live'; dot.style.background='';
+      sl.textContent='Stop recording'; stop.className='btn start'; return;
+    }
+    running=false; bars.forEach(function(b){b.style.height='3px'});
+    label.textContent='Recording stopped. Saving your file…'; dot.className='dot'; dot.style.background='var(--unknown)';
+    sl.textContent='Saving…'; stop.className='btn ghost';
+    setTimeout(function(){
+      label.textContent='Saved with missing sections'; dot.style.background='var(--amber)';
+      sl.textContent='Restart demo';
+    },1800);
+  });
+})();
+</script>
