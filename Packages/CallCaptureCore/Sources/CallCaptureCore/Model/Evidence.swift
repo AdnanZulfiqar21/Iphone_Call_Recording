@@ -49,6 +49,7 @@ public enum ReasonCode: String, Codable, Sendable, CaseIterable {
     case checkpointMissing
     case segmentCorrupt
     case manifestMismatch
+    case fileGap
     case protectedDataUnavailable
     case diskFull
     case blankFrames

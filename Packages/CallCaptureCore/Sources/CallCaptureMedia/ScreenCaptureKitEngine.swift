@@ -77,7 +77,7 @@ public final class ScreenCaptureKitEngine: NSObject, CaptureEngine, SCContentSha
         s?(g, .selectionAccepted(microphoneEnabled: filter.isMicrophoneEnabled))
     }
 
-    public func contentSharingPickerStartDidFail(withError error: any Error) {
+    public func contentSharingPickerStartDidFailWithError(_ error: any Error) {
         let (s, g) = lock.withLock { (sink, generation) }
         s?(g, Self.isUserDeclined(error) ? .permissionDenied : .unsupported("pickerStartFailed"))
     }

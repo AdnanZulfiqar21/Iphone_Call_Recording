@@ -53,3 +53,69 @@ jobs:
             Packages/CallCaptureCore/package-macos-tests.log
             Packages/CallCaptureCore/package-ios-build.log
           retention-days: 7
+
+  app-ios:
+    name: App — simulator tests + unsigned Release device build (Xcode 27)
+    runs-on: xcode-27
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen && xcodegen --version
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Select simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          rt=[k for k in d if 'iOS-27' in k]
+          devs=[x for k in rt for x in d[k] if x['name']=='iPhone 17 Pro'] or [x for k in rt for x in d[k] if 'iPhone' in x['name']]
+          print(devs[0]['udid'])")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+      - name: Debug simulator build + unit/UI tests
+        run: |
+          set -o pipefail
+          xcodebuild test -project CallCapture.xcodeproj -scheme CallCapture -configuration Debug \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult -derivedDataPath /tmp/dd-app CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* " || true
+          grep -q "TEST SUCCEEDED" app-test.log
+      - name: Unsigned Release build for iOS devices
+        if: always()
+        run: |
+          set -o pipefail
+          xcodebuild build -project CallCapture.xcodeproj -scheme CallCapture -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath /tmp/dd-release CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee release-build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" release-build.log
+      - name: Release audit (no test doubles, plist, privacy manifest)
+        if: always()
+        run: bash scripts/release_audit.sh /tmp/dd-release/Build/Products/Release-iphoneos/CallCapture.app | tee release-audit.log
+      - name: Export screenshots from test results
+        if: always()
+        run: |
+          mkdir -p screenshots
+          xcrun xcresulttool export attachments --path TestResults.xcresult --output-path screenshots || true
+          ls screenshots | head -50
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ux-screenshots
+          path: screenshots
+          retention-days: 14
+      - name: Compress result bundle
+        if: always()
+        run: zip -qry TestResults.xcresult.zip TestResults.xcresult || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-test-results
+          path: |
+            TestResults.xcresult.zip
+            app-test.log
+            release-build.log
+            release-audit.log
+          retention-days: 7

@@ -25,6 +25,9 @@ public enum SessionEvent: Sendable, Equatable {
     case writerClosed
     case deadlineExpired(SessionDeadline)
     case mediaServicesReset
+    /// Important Recording mode: a required source was not confirmed in time. Preserve what was
+    /// captured and stop safely (section 14.4).
+    case protectedStop(ReasonCode)
     case reset
 }
 
@@ -168,6 +171,11 @@ public struct SessionStateMachine: Sendable {
         case (_, .writerClosed):
             writerLeaseHeld = false
             return lifecycle.isActive ? [] : [.releaseResources]
+
+        case (.starting, .protectedStop(let reason)), (.capturing, .protectedStop(let reason)):
+            lifecycle = .stopping
+            captureEndReason = reason
+            return [.freezeCutoff, .stopCapture, .cancel(.startup), .beginDrain, .schedule(.drain, seconds: profile.drainDeadline)]
 
         case (.starting, .mediaServicesReset), (.capturing, .mediaServicesReset), (.stopping, .mediaServicesReset):
             // Invalidate and close safely; restart requires a new user action (section 8, T22).

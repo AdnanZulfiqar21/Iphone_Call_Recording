@@ -1,0 +1,124 @@
+# XcodeGen spec — the Xcode project is generated in CI (`xcodegen generate`); it is not committed.
+name: CallCapture
+options:
+  bundleIdPrefix: com.adnanzulfiqar
+  deploymentTarget:
+    iOS: "27.0"
+  xcodeVersion: "27.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+packages:
+  CallCaptureCore:
+    path: Packages/CallCaptureCore
+targets:
+  CallCapture:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Sources
+      - path: App/Shared
+      - path: App/Resources
+        excludes: ["*.storekit"]
+    dependencies:
+      - package: CallCaptureCore
+        product: CallCaptureCore
+      - package: CallCaptureCore
+        product: CallCaptureMedia
+      - target: CallCaptureWidgets
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.adnanzulfiqar.callcapture
+        PRODUCT_NAME: CallCapture
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: CallCapture
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [screen-capture, audio]
+        NSSupportsLiveActivities: true
+        NSMicrophoneUsageDescription: "CallCapture uses the microphone only while you are recording, to include your voice and nearby sound."
+        NSFaceIDUsageDescription: "Face ID unlocks your recordings when App Lock is on."
+        NSPhotoLibraryAddUsageDescription: "Lets you save a copy of a recording to Photos. CallCapture can't read your photo library."
+        CFBundleURLTypes:
+          - CFBundleURLName: com.adnanzulfiqar.callcapture
+            CFBundleURLSchemes: [callcapture]
+  CallCaptureWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: App/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.adnanzulfiqar.callcapture.widgets
+        INFOPLIST_FILE: Widgets/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: CallCapture
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  CallCaptureTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [AppTests]
+    dependencies:
+      - target: CallCapture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.adnanzulfiqar.callcapture.tests
+        GENERATE_INFOPLIST_FILE: YES
+  CallCaptureUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: CallCapture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.adnanzulfiqar.callcapture.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: CallCapture
+schemes:
+  CallCapture:
+    build:
+      targets:
+        CallCapture: all
+    run:
+      config: Debug
+      storeKitConfiguration: App/Resources/CallCapture.storekit
+    test:
+      config: Debug
+      targets:
+        - CallCaptureTests
+        - CallCaptureUITests
+    archive:
+      config: Release

@@ -30,6 +30,7 @@ public enum StatusMessage: Hashable, Sendable {
     case notEnoughStorage
     case captureEndedBySystem
     case mediaServicesReset
+    case requiredSourceMissingStopped
     // Sources
     case sourceChecking(SourceKind)
     case sourceDetected(SourceKind)
@@ -97,6 +98,7 @@ public enum StatusPresenter {
         case .stopping:
             if endReason == .streamStoppedBySystem { return StatusLine(.warning, .captureEndedBySystem) }
             if endReason == .mediaServicesReset { return StatusLine(.warning, .mediaServicesReset) }
+            if endReason == .sourceNeverArrived { return StatusLine(.warning, .requiredSourceMissingStopped) }
             return StatusLine(.neutral, .stoppingCapture)
         case .finalizing: return StatusLine(.neutral, .savingFile)
         case .finalized, .failed:

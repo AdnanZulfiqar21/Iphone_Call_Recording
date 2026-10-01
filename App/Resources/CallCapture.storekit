@@ -1,0 +1,27 @@
+{
+  "identifier" : "6C1A8D2E",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "6740000001",
+      "localizations" : [
+        {
+          "description" : "Advanced organisation, export presets and detailed history.",
+          "displayName" : "CallCapture Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.adnanzulfiqar.callcapture.pro",
+      "referenceName" : "CallCapture Pro",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [],
+  "version" : { "major" : 4, "minor" : 0 }
+}

@@ -13,6 +13,8 @@ public struct ValidationReport: Codable, Sendable, Hashable {
     public var durations: [String: Double]
     /// Ranges whose decode failed or that are missing in the file.
     public var detectedRanges: [MediaRange]
+    /// The same ranges attributed to the track they were found in (source raw value → ranges).
+    public var sourceRanges: [String: [MediaRange]]?
     /// For FULL checks: seconds decoded so far, so the work is resumable.
     public var decodedThrough: Double
     public var notes: [String]
@@ -40,16 +42,33 @@ public enum ValidationReconciler {
         for source in contract.requiredSources where source.isAudio {
             let key = source.rawValue
             guard let actual = report.durations[key] else { continue }
-            if expectedDuration - actual > tolerance {
+            let tail = MediaRange(startSeconds: actual, endSeconds: expectedDuration)
+            if expectedDuration - actual > tolerance && !alreadyKnown(tail, source: source, in: ledger) {
                 // A long video track must not hide a shorter audio track (section 6.3).
-                ledger.record(Anomaly(source: source, range: MediaRange(startSeconds: actual, endSeconds: expectedDuration),
-                                      kind: .missing, reason: .tailTruncation))
+                ledger.record(Anomaly(source: source, range: tail, kind: .missing, reason: .tailTruncation))
             }
         }
-        for r in report.detectedRanges {
-            for s in contract.requiredSources {
-                ledger.record(Anomaly(source: s, range: r, kind: .damaged, reason: .segmentCorrupt))
+        // File-level holes found by FULL checks, attributed per track. A hole already known from
+        // capture evidence is not duplicated; anything new is added and never removes old intervals.
+        for (raw, ranges) in report.sourceRanges ?? [:] {
+            guard let source = SourceKind(rawValue: raw) else { continue }
+            for r in ranges where !alreadyKnown(r, source: source, in: ledger) {
+                ledger.record(Anomaly(source: source, range: r, kind: .missing, reason: .fileGap))
             }
+        }
+        if report.sourceRanges == nil {
+            for r in report.detectedRanges {
+                for s in contract.requiredSources where !alreadyKnown(r, source: s, in: ledger) {
+                    ledger.record(Anomaly(source: s, range: r, kind: .damaged, reason: .segmentCorrupt))
+                }
+            }
+        }
+    }
+
+    static func alreadyKnown(_ r: MediaRange, source: SourceKind, in ledger: AnomalyLedger) -> Bool {
+        ledger.open(for: source).contains { a in
+            let overlap = min(a.range.end.seconds, r.end.seconds) - max(a.range.start.seconds, r.start.seconds)
+            return overlap >= 0.8 * r.duration
         }
     }
 }

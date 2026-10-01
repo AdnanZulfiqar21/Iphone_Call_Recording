@@ -209,6 +209,17 @@ public actor SessionController {
         guard generation == machine.generation else { return }
         deps.diagnostics.record(.deadline, session: machine.sessionID, detail: d.rawValue)
         if d == .drain { pipeline?.abandonUndrained() }
+        if d == .startup, machine.lifecycle == .capturing, let contract = machine.contract,
+           contract.unmetRequirementPolicy == .protectedStop {
+            let unmet = (pipeline?.status() ?? []).filter {
+                $0.requirement == .required && $0.health != .checksPassing && $0.health != .limited
+            }
+            if !unmet.isEmpty {
+                deps.diagnostics.record(.deadline, session: machine.sessionID, reason: .sourceNeverArrived, detail: "protectedStop")
+                apply(.protectedStop(.sourceNeverArrived), generation: generation)
+                return
+            }
+        }
         apply(.deadlineExpired(d), generation: generation)
     }
 

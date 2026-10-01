@@ -173,6 +173,26 @@ struct SessionControllerTests {
         #expect(await lifecycle(h) == .starting)
     }
 
+    @Test("Important mode: unconfirmed required app audio at the startup deadline stops safely and keeps media")
+    func importantModeProtectedStop() async throws {
+        let h = try harness()
+        let contract = CaptureContract.standard(mode: .screenAndAudio, importantMode: true)
+        await h.controller.record(contract: contract, title: "Important")
+        #expect(await eventually { await lifecycle(h) == .starting })
+        feed(h, from: 0, to: 16)   // screen + mic only; app audio never arrives
+        #expect(await eventually { await lifecycle(h) == .capturing })
+        // Startup deadline evaluation uses the monotonic clock; advance past it via the real clock wait.
+        try await Task.sleep(nanoseconds: 50_000_000)
+        await h.scheduler.fire(after: 15)
+        #expect(await eventually { await lifecycle(h) == .finalized })
+        let s = await h.controller.snapshot()
+        #expect(s.endReason == .sourceNeverArrived)
+        #expect(s.finalOutcome == .savedPartial)
+        let id = try #require(s.savedRecordingID)
+        let m = try #require(h.store.metadata(id))
+        #expect(m.unmetRequirements == [.appAudio])
+    }
+
     @Test("Microphone turned off in the system picker makes it optional, not missing")
     func micOffInPicker() async throws {
         let h = try harness(picker: .accept(microphone: false))

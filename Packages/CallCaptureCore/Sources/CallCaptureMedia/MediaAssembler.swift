@@ -90,9 +90,12 @@ public enum RecordingValidator {
                 durations[sources[index].rawValue] = CMTimeRangeGetEnd(range).seconds
                 let windows = [range.start.seconds, range.start.seconds + range.duration.seconds / 2,
                                max(range.start.seconds, CMTimeRangeGetEnd(range).seconds - 1)]
-                for w in windows where try !decodes(asset: asset, track: track, at: w) {
-                    result = .failed
-                    notes.append("decodeFailed:\(sources[index].rawValue)@\(Int(w))")
+                for w in windows {
+                    let ok = try decodes(asset: asset, track: track, at: w)
+                    if !ok {
+                        result = .failed
+                        notes.append("decodeFailed:\(sources[index].rawValue)@\(Int(w))")
+                    }
                 }
             }
             if tracks.isEmpty { result = .failed; notes.append("noTracks") }
@@ -148,7 +151,10 @@ public enum RecordingValidator {
             while let buffer = output.copyNextSampleBuffer() {
                 let r = SampleBufferInspector.range(of: buffer)
                 if isAudio && r.start.seconds - expected > gapTolerance {
-                    report.detectedRanges.append(MediaRange(startSeconds: expected, endSeconds: r.start.seconds))
+                    let hole = MediaRange(startSeconds: expected, endSeconds: r.start.seconds)
+                    report.detectedRanges.append(hole)
+                    report.sourceRanges = report.sourceRanges ?? [:]
+                    report.sourceRanges?[sources[index].rawValue, default: []].append(hole)
                 }
                 expected = max(expected, r.end.seconds)
             }
@@ -158,7 +164,10 @@ public enum RecordingValidator {
                 report.notes.append("decodeFailed:\(sources[index].rawValue)@\(Int(expected))")
             } else if isAudio && to - expected > gapTolerance && to >= duration - 0.01 {
                 // A shorter audio track inside a longer video is a real hole, not a pass (section 6.3).
-                report.detectedRanges.append(MediaRange(startSeconds: expected, endSeconds: to))
+                let hole = MediaRange(startSeconds: expected, endSeconds: to)
+                report.detectedRanges.append(hole)
+                report.sourceRanges = report.sourceRanges ?? [:]
+                report.sourceRanges?[sources[index].rawValue, default: []].append(hole)
             }
         }
         report.decodedThrough = to
