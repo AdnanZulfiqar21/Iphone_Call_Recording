@@ -190,6 +190,13 @@ public final class SegmentedTrackWriter: NSObject, MediaWriter, @unchecked Senda
     }
 
     enum WriterError: Error { case notOpen, missingInitialization, cannotAddInput, startFailed(String) }
+
+    /// Technical summary for diagnostics and tests (no media content).
+    public var diagnosticSummary: String {
+        let parts = lock.withLock { tracks.map { "\($0.key.source.rawValue).e\($0.key.epoch)=\($0.value.statusDescription)" } }
+        let err = refLock.withLock { lastError ?? "none" }
+        return "tracks[\(parts.sorted().joined(separator: ","))] lastError=\(err)"
+    }
 }
 
 /// One AVAssetWriter in delegate segment mode for a single source × epoch.
@@ -220,6 +227,12 @@ final class TrackWriter: NSObject, AVAssetWriterDelegate, @unchecked Sendable {
         }
         writer.startSession(atSourceTime: startTime)
         _ = sessionOffset
+    }
+
+    var statusDescription: String {
+        lock.withLock {
+            "status:\(writer.status.rawValue) ready:\(input.isReadyForMoreMediaData) err:\(writer.error.map { ($0 as NSError).code } ?? 0)"
+        }
     }
 
     func append(_ buffer: CMSampleBuffer) -> WriterAppendResult {

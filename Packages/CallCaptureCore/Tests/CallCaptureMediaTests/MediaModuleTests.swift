@@ -23,17 +23,34 @@ private final class CheckpointCollector: @unchecked Sendable {
     var all: [CheckpointReport] { lock.withLock { reports } }
 }
 
+private func log(_ s: String) {
+    FileHandle.standardError.write(Data("[media-test] \(s)
+".utf8))
+}
+
 /// Feeds real buffers into the production writer, honouring backpressure like the pipeline does.
-private func write(_ writer: SegmentedTrackWriter, _ observations: [SampleObservation], origin: Double) async {
-    for o in observations {
+/// Returns counts so a stalled writer fails the test instead of hanging it.
+@discardableResult
+private func write(_ writer: SegmentedTrackWriter, _ observations: [SampleObservation], origin: Double) async -> (accepted: Int, other: Int) {
+    var accepted = 0, other = 0
+    for (i, o) in observations.enumerated() {
         let sample = CapturedSample(observation: o, payload: SyntheticMediaFactory.payload(for: o))
         let session = MediaRange(startSeconds: o.range.start.seconds - origin, endSeconds: o.range.end.seconds - origin)
         var attempts = 0
-        while writer.append(sample, sessionTime: session) == .notReady && attempts < 100 {
+        var result = writer.append(sample, sessionTime: session)
+        while result == .notReady && attempts < 100 {
             attempts += 1
             try? await Task.sleep(nanoseconds: 2_000_000)
+            result = writer.append(sample, sessionTime: session)
+        }
+        if result == .accepted { accepted += 1 } else {
+            other += 1
+            if other <= 3 || other % 200 == 0 { log("sample \(i) \(o.source.rawValue) -> \(result) \(writer.diagnosticSummary)") }
+            if other > 50 && accepted == 0 { log("writer stalled; aborting feed"); break }
         }
     }
+    log("fed \(observations.count): accepted \(accepted), other \(other); \(writer.diagnosticSummary)")
+    return (accepted, other)
 }
 
 private func observations(seconds: Double, origin: Double = 100, micGap: ClosedRange<Double>? = nil) -> [SampleObservation] {
@@ -55,7 +72,7 @@ private func observations(seconds: Double, origin: Double = 100, micGap: ClosedR
     return list.sorted { $0.range.start < $1.range.start }
 }
 
-@Suite("Production media writer, assembler and validator (P04/P05, SYNTHETIC_TESTED)")
+@Suite("Production media writer, assembler and validator (P04/P05, SYNTHETIC_TESTED)", .timeLimit(.minutes(3)))
 struct MediaPipelineTests {
     let contract = CaptureContract.standard(mode: .screenAndAudio)
 
@@ -79,8 +96,11 @@ struct MediaPipelineTests {
         let writer = SegmentedTrackWriter()
         let identity = SessionIdentity(sessionID: UUID(), generation: 1, contractVersion: 1)
         try writer.open(identity: identity, contract: contract, recoveryDirectory: recovery) { collector.add($0) }
-        await write(writer, observations(seconds: 7), origin: 100)
+        let fed = await write(writer, observations(seconds: 7), origin: 100)
+        #expect(fed.accepted > 500)
+        log("finishing writer")
         let report = await writer.finish()
+        log("writer finished: \(String(describing: report.error))")
         #expect(report.error == nil)
 
         let manifest = try RecoveryFiles(directory: recovery).readManifest()
@@ -96,7 +116,9 @@ struct MediaPipelineTests {
 
         let recordingDir = root.appendingPathComponent("recording")
         try FileManager.default.createDirectory(at: recordingDir, withIntermediateDirectories: true)
+        log("assembling \(manifest.segments.count) segments")
         let media = try await MediaAssembler().assemble(recoveryDirectory: recovery, manifest: manifest, into: recordingDir)
+        log("assembled: \(media.validation.notes) durations=\(media.validation.durations)")
         #expect(media.validation.result == .basicChecksPassed)
         #expect(abs(media.duration - 7) < 0.6)
         #expect(media.tracks == [.screen, .microphone])
