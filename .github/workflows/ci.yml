@@ -86,6 +86,22 @@ jobs:
             -resultBundlePath TestResults.xcresult -derivedDataPath /tmp/dd-app CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* " || true
           grep -q "TEST SUCCEEDED" app-test.log
+      - name: Small-screen layout run (UX02)
+        if: always()
+        run: |
+          SMALL=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          devs=[x for k in d if 'iOS-27' in k for x in d[k] if 'iPhone' in x['name']]
+          pref=['iPhone SE (3rd generation)','iPhone 13 mini','iPhone 16e','iPhone 17e','iPhone 16','iPhone 17']
+          devs.sort(key=lambda x: pref.index(x['name']) if x['name'] in pref else 99)
+          print(devs[0]['udid'], '|', devs[0]['name'])")
+          echo "Small device: $SMALL"
+          UDID=${SMALL%% |*}
+          set -o pipefail
+          xcodebuild test-without-building -project CallCapture.xcodeproj -scheme CallCapture             -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath /tmp/dd-app -resultBundlePath SmallScreen.xcresult             -only-testing:CallCaptureUITests/CallCaptureUITests/testRecordStopAndSave             -only-testing:CallCaptureUITests/CallCaptureUITests/testLargestTextDarkModeKeepsStop             -only-testing:CallCaptureUITests/CallCaptureUITests/testOnboardingAndSetup             2>&1 | tee small-screen.log | grep -E "Test Case .* (passed|failed)|error:|TEST (SUCCEEDED|FAILED)" || true
+          mkdir -p screenshots-small && xcrun xcresulttool export attachments --path SmallScreen.xcresult --output-path screenshots-small || true
+          grep -q "TEST SUCCEEDED" small-screen.log
       - name: Unsigned Release build for iOS devices
         if: always()
         run: |
@@ -107,7 +123,9 @@ jobs:
         if: always()
         with:
           name: ux-screenshots
-          path: screenshots
+          path: |
+            screenshots
+            screenshots-small
           retention-days: 14
       - name: Compress result bundle
         if: always()
@@ -121,4 +139,5 @@ jobs:
             app-test.log
             release-build.log
             release-audit.log
+            small-screen.log
           retention-days: 7
