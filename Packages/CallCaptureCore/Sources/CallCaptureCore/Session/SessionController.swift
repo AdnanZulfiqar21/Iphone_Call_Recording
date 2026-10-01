@@ -43,11 +43,14 @@ public struct SessionDependencies: Sendable {
     public var diagnostics: DiagnosticsLog
     public var profile: AcceptanceProfile
     public var freeBytes: @Sendable () -> Int64
+    /// Device conditions sampled during capture (thermal, memory, Low Power). Free space comes from `freeBytes`.
+    public var deviceConditions: @Sendable () -> ResourceInputs
 
     public init(engine: any CaptureEngine, makeWriter: @escaping @Sendable () -> any MediaWriter, assembler: any RecordingAssembler,
                 store: RecordingStore, clock: any MonotonicClock = SystemMonotonicClock(), wallClock: any WallClock = SystemWallClock(),
                 scheduler: any SessionScheduler = TaskScheduler(), diagnostics: DiagnosticsLog = DiagnosticsLog(),
-                profile: AcceptanceProfile = .v1, freeBytes: @escaping @Sendable () -> Int64) {
+                profile: AcceptanceProfile = .v1, freeBytes: @escaping @Sendable () -> Int64,
+                deviceConditions: @escaping @Sendable () -> ResourceInputs = { ResourceInputs(freeBytes: 0) }) {
         self.engine = engine
         self.makeWriter = makeWriter
         self.assembler = assembler
@@ -58,6 +61,7 @@ public struct SessionDependencies: Sendable {
         self.diagnostics = diagnostics
         self.profile = profile
         self.freeBytes = freeBytes
+        self.deviceConditions = deviceConditions
     }
 }
 
@@ -340,8 +344,25 @@ public actor SessionController {
 
     private func tick(_ generation: Int) {
         guard generation == machine.generation, machine.lifecycle.isActive else { return }
+        if machine.lifecycle == .capturing || machine.lifecycle == .starting { evaluateResources(generation) }
         publish()
         startTicker(generation: generation)
+    }
+
+    /// ResourceGovernor during capture (section 15): optional work degrades first; reaching the
+    /// storage reserve or critical thermal state stops safely, preserving what was captured.
+    private func evaluateResources(_ generation: Int) {
+        var inputs = deps.deviceConditions()
+        inputs.freeBytes = deps.freeBytes()
+        let before = governor.state
+        let state = governor.evaluate(inputs)
+        if state != before {
+            deps.diagnostics.record(.resourceState, session: machine.sessionID, detail: state.rawValue)
+        }
+        if state == .protectedStop {
+            let reason: ReasonCode = inputs.freeBytes <= governor.reserve.reserveBytes ? .diskFull : .streamStoppedBySystem
+            apply(.protectedStop(reason), generation: generation)
+        }
     }
 
     // MARK: Finalization

@@ -12,7 +12,7 @@ struct CopyAndSettingsTests {
         var m: [StatusMessage] = [.chooseWhatToRecord, .preparing, .startingCapture, .recording, .stoppingCapture, .savingFile,
                                   .savedNoKnownGaps, .savedWithMissingSections, .recoveredNoKnownGaps, .recoveredWithMissingSections,
                                   .saveFailedRecoveryKept, .cancelled, .permissionDenied, .unsupported, .notEnoughStorage,
-                                  .captureEndedBySystem, .mediaServicesReset, .requiredSourceMissingStopped,
+                                  .captureEndedBySystem, .mediaServicesReset, .requiredSourceMissingStopped, .storageLowStopped,
                                   .screenIdle, .screenBlank, .screenPaused, .statusNotUpdated]
         for s in SourceKind.allCases {
             m += [.sourceChecking(s), .sourceDetected(s), .sourceUnconfirmed(s), .sourceStale(s), .sourceSuspiciousSilence(s),

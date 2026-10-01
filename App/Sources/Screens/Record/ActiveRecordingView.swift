@@ -112,6 +112,12 @@ struct ActiveRecordingView: View {
             InlineNotice(text: String(localized: "App audio isn't confirmed. iOS may not provide another app's call audio; the microphone may still pick up a speaker."),
                          tone: .neutral)
         }
+        if s.lifecycle == .capturing && !s.resourceState.allowsOptionalVisuals {
+            // Optional visuals are reduced under load; recording protections are unchanged (UX16).
+            InlineNotice(text: String(localized: "Your iPhone is busy or warm. Live input levels are paused to protect the recording."),
+                         tone: .neutral)
+                .accessibilityIdentifier("resourceNotice")
+        }
         if s.lifecycle == .stopping || s.lifecycle == .finalizing {
             InlineNotice(text: String(localized: "Capture is off. Your file is being saved — you can leave this screen."), tone: .accent)
         }

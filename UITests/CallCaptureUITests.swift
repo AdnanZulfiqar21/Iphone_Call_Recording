@@ -222,6 +222,27 @@ final class CallCaptureUITests: XCTestCase {
         screenshot(app, "25-low-storage")
     }
 
+    // UX16: injected load reduces optional visuals while Stop and status stay available.
+    func testResourcePressureReducesOptionalVisuals() {
+        let app = launch(["-UITestScenario", "normal", "-UITestThermal", "fair"])
+        startRecording(app)
+        XCTAssertTrue(app.buttons["stopButton"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.descendants(matching: .any)["resourceNotice"].waitForExistence(timeout: 10))
+        screenshot(app, "26-resource-pressure")
+        app.buttons["stopButton"].tap()
+        XCTAssertTrue(app.buttons["newRecordingButton"].waitForExistence(timeout: 60))
+    }
+
+    // UX14: right-to-left layout readiness with a pseudo-RTL launch.
+    func testRightToLeftLayout() {
+        let app = launch(["-UITestSeedLibrary", "6", "-AppleTextDirection", "YES", "-NSForceRightToLeftWritingDirection", "YES"])
+        XCTAssertTrue(app.buttons["startButton"].waitForExistence(timeout: 10))
+        screenshot(app, "27-dashboard-rtl")
+        app.tabBars.buttons["Recordings"].tap()
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
+        screenshot(app, "28-library-rtl")
+    }
+
     // UX08: automated accessibility audit of primary screens.
     func testAccessibilityAudit() throws {
         let app = launch(["-UITestSeedLibrary", "8", "-UITestScenario", "normal"])

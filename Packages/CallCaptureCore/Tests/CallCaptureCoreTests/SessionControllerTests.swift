@@ -13,9 +13,11 @@ struct SessionControllerTests {
         let layout: FileLayout
     }
 
+    final class Free: @unchecked Sendable { var bytes: Int64; init(_ b: Int64) { bytes = b } }
+
     func harness(picker: SyntheticCaptureEngine.PickerResponse = .accept(microphone: true),
                  writer: FixtureMediaWriter = FixtureMediaWriter(), assembler: FixtureAssembler = FixtureAssembler(),
-                 freeBytes: Int64 = 50_000_000_000) throws -> Harness {
+                 freeBytes: Int64 = 50_000_000_000, free: Free? = nil) throws -> Harness {
         let layout = FileLayout(root: temporaryRoot())
         let store = try RecordingStore(layout: layout)
         let engine = SyntheticCaptureEngine(pickerResponse: picker)
@@ -28,7 +30,7 @@ struct SessionControllerTests {
         profile.videoQueueBytes = 1 << 30
         profile.maxPendingTasks = 1_000_000
         let deps = SessionDependencies(engine: engine, makeWriter: { writer }, assembler: assembler, store: store,
-                                       scheduler: scheduler, profile: profile, freeBytes: { freeBytes })
+                                       scheduler: scheduler, profile: profile, freeBytes: { free?.bytes ?? freeBytes })
         return Harness(controller: SessionController(dependencies: deps), engine: engine, writer: writer,
                        scheduler: scheduler, store: store, layout: layout)
     }
@@ -191,6 +193,23 @@ struct SessionControllerTests {
         let id = try #require(s.savedRecordingID)
         let m = try #require(h.store.metadata(id))
         #expect(m.unmetRequirements == [.appAudio])
+    }
+
+    @Test("T26/T36 storage reaching the reserve during capture stops safely and keeps media")
+    func lowStorageProtectedStop() async throws {
+        let free = Free(50_000_000_000)
+        let h = try harness(free: free)
+        await h.controller.record(contract: screenMicContract, title: "Low space")
+        #expect(await eventually { await lifecycle(h) == .starting })
+        feed(h, from: 0, to: 4)
+        #expect(await eventually { await lifecycle(h) == .capturing })
+        free.bytes = 100_000_000   // below the reserve
+        await h.scheduler.fire(after: 1)   // resource evaluation tick
+        #expect(await eventually { await lifecycle(h) == .finalized })
+        let s = await h.controller.snapshot()
+        #expect(s.endReason == .diskFull)
+        #expect(s.savedRecordingID != nil)
+        #expect(s.headline.message == .savedNoKnownGaps || s.headline.message == .savedWithMissingSections)
     }
 
     @Test("Microphone turned off in the system picker makes it optional, not missing")

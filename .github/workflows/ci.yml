@@ -87,22 +87,28 @@ jobs:
             -resultBundlePath TestResults.xcresult -derivedDataPath /tmp/dd-app CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* " || true
           grep -q "TEST SUCCEEDED" app-test.log
-      - name: Small-screen layout run (UX02)
+      - name: Smallest and largest screen layout runs (UX02)
         if: always()
         run: |
-          SMALL=$(xcrun simctl list devices available -j | python3 -c "
-          import json,sys
-          d=json.load(sys.stdin)['devices']
-          devs=[x for k in d if 'iOS-27' in k for x in d[k] if 'iPhone' in x['name']]
-          pref=['iPhone SE (3rd generation)','iPhone 13 mini','iPhone 16e','iPhone 17e','iPhone 16','iPhone 17']
-          devs.sort(key=lambda x: pref.index(x['name']) if x['name'] in pref else 99)
-          print(devs[0]['udid'], '|', devs[0]['name'])")
-          echo "Small device: $SMALL"
-          UDID=${SMALL%% |*}
-          set -o pipefail
-          xcodebuild test-without-building -project CallCapture.xcodeproj -scheme CallCapture             -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath /tmp/dd-app -resultBundlePath SmallScreen.xcresult             -only-testing:CallCaptureUITests/CallCaptureUITests/testRecordStopAndSave             -only-testing:CallCaptureUITests/CallCaptureUITests/testLargestTextDarkModeKeepsStop             -only-testing:CallCaptureUITests/CallCaptureUITests/testOnboardingAndSetup             2>&1 | tee small-screen.log | grep -E "Test Case .* (passed|failed)|error:|TEST (SUCCEEDED|FAILED)" || true
-          mkdir -p screenshots-small && xcrun xcresulttool export attachments --path SmallScreen.xcresult --output-path screenshots-small || true
-          grep -Eq "TEST (EXECUTE )?SUCCEEDED" small-screen.log
+          python3 - > devices.txt <<'PY'
+          import json, subprocess
+          d = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j']))['devices']
+          devs = [x for k in d if 'iOS-27' in k for x in d[k] if 'iPhone' in x['name']]
+          small = ['iPhone SE (3rd generation)', 'iPhone 13 mini', 'iPhone 16e', 'iPhone 17e', 'iPhone 16', 'iPhone 17']
+          large = ['iPhone 18 Pro Max', 'iPhone 17 Pro Max', 'iPhone 16 Pro Max', 'iPhone 16 Plus']
+          pick = lambda pref: sorted(devs, key=lambda x: pref.index(x['name']) if x['name'] in pref else 99)[0]
+          for label, dev in (('small', pick(small)), ('large', pick(large))):
+              print(label, dev['udid'], dev['name'].replace(' ', '_'))
+          PY
+          cat devices.txt
+          status=0
+          while read -r label udid name; do
+            xcodebuild test-without-building -project CallCapture.xcodeproj -scheme CallCapture               -destination "platform=iOS Simulator,id=$udid" -derivedDataPath /tmp/dd-app -resultBundlePath "Layout-$label.xcresult"               -only-testing:CallCaptureUITests/CallCaptureUITests/testRecordStopAndSave               -only-testing:CallCaptureUITests/CallCaptureUITests/testLargestTextDarkModeKeepsStop               -only-testing:CallCaptureUITests/CallCaptureUITests/testOnboardingAndSetup               > "layout-$label.log" 2>&1 || true
+            echo "== $label ($name)"; grep -E "Test Case .* (passed|failed)|TEST (EXECUTE )?(SUCCEEDED|FAILED)" "layout-$label.log"
+            mkdir -p "screenshots-$label" && xcrun xcresulttool export attachments --path "Layout-$label.xcresult" --output-path "screenshots-$label" || true
+            grep -Eq "TEST (EXECUTE )?SUCCEEDED" "layout-$label.log" || status=1
+          done < devices.txt
+          exit $status
       - name: Unsigned Release build for iOS devices
         if: always()
         run: |
@@ -127,6 +133,7 @@ jobs:
           path: |
             screenshots
             screenshots-small
+            screenshots-large
           retention-days: 14
       - name: Compress result bundle
         if: always()
@@ -140,5 +147,6 @@ jobs:
             app-test.log
             release-build.log
             release-audit.log
-            small-screen.log
+            layout-small.log
+            layout-large.log
           retention-days: 7

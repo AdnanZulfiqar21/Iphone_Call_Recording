@@ -1,3 +1,4 @@
+import UIKit
 import SwiftUI
 import CallCaptureCore
 import CallCaptureMedia
@@ -52,9 +53,10 @@ final class AppModel {
         self.captureAvailable = engine.isAvailable
         let freeOverride = launch.freeBytesOverride
         let freeBytesProvider: @Sendable () -> Int64 = { freeOverride ?? StorageInfo.freeBytes(at: layout.root) }
+        let conditions = DeviceConditions(thermalOverride: launch.thermalOverride)
         let deps = SessionDependencies(
             engine: engine, makeWriter: { SegmentedTrackWriter() }, assembler: MediaAssembler(), store: store,
-            diagnostics: diagnostics, freeBytes: freeBytesProvider)
+            diagnostics: diagnostics, freeBytes: freeBytesProvider, deviceConditions: { conditions.current() })
         self.controller = SessionController(dependencies: deps)
         self.recovery = RecoveryManager(layout: layout, store: store)
         self.entitlements = EntitlementService(defaults: launch.defaults)
@@ -289,4 +291,35 @@ final class UnavailableCaptureEngine: CaptureEngine, @unchecked Sendable {
     }
     func startCapture(generation: Int) async {}
     func stopCapture(generation: Int) async {}
+}
+
+/// Samples thermal state, Low Power Mode and memory warnings for the ResourceGovernor.
+final class DeviceConditions: @unchecked Sendable {
+    private let lock = NSLock()
+    private var memoryWarningAt: Date?
+    private let thermalOverride: ThermalLevel?
+    private var token: NSObjectProtocol?
+
+    init(thermalOverride: ThermalLevel?) {
+        self.thermalOverride = thermalOverride
+        token = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification,
+                                                       object: nil, queue: nil) { [weak self] _ in
+            self?.lock.withLock { self?.memoryWarningAt = Date() }
+        }
+    }
+
+    func current() -> ResourceInputs {
+        let info = ProcessInfo.processInfo
+        let thermal: ThermalLevel = thermalOverride ?? {
+            switch info.thermalState {
+            case .nominal: return .nominal
+            case .fair: return .fair
+            case .serious: return .serious
+            case .critical: return .critical
+            @unknown default: return .fair
+            }
+        }()
+        let recentWarning = lock.withLock { memoryWarningAt.map { Date().timeIntervalSince($0) < 30 } ?? false }
+        return ResourceInputs(freeBytes: 0, thermal: thermal, memoryWarning: recentWarning, lowPowerMode: info.isLowPowerModeEnabled)
+    }
 }

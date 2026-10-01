@@ -12,6 +12,7 @@ struct LaunchConfiguration {
     var resetData = false
     var skipOnboarding = false
     var freeBytesOverride: Int64?
+    var thermalOverride: ThermalLevel?
     #if DEBUG
     var scenario: String?
     var picker: String?
@@ -41,6 +42,7 @@ struct LaunchConfiguration {
         c.seedLibraryCount = Int(value("-UITestSeedLibrary") ?? "") ?? 0
         c.seedMediaRecording = args.contains("-UITestSeedMedia")
         if let free = value("-UITestFreeBytes").flatMap(Int64.init) { c.freeBytesOverride = free }
+        if let thermal = value("-UITestThermal").flatMap(ThermalLevel.init(rawValue:)) { c.thermalOverride = thermal }
         if let appearance = value("-UITestAppearance") { c.defaults.set(appearance, forKey: "appearance") }
         if args.contains("-UITestNoConsentReminder") { c.defaults.set(false, forKey: "consentReminder") }
         return c
