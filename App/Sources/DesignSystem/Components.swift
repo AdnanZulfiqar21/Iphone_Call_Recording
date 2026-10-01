@@ -109,10 +109,12 @@ struct SourceStatusRow: View {
     let status: SourceStatus
     let lifecycle: Lifecycle
     var showMeter: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let line = StatusPresenter.source(status, lifecycle: lifecycle)
-        HStack(spacing: DS.Space.m) {
+        // At accessibility sizes the row stacks vertically so words never break mid-word (UX03).
+        AdaptiveRow(spacing: DS.Space.m) {
             Image(systemName: status.source.symbol)
                 .font(.body)
                 .foregroundStyle(DS.Palette.accent)
@@ -131,7 +133,7 @@ struct SourceStatusRow: View {
                     }
                 }
             }
-            Spacer(minLength: DS.Space.s)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: DS.Space.s) }
             StatusPill(text: StatusCopy.text(line.message), tone: line.tone)
         }
         .padding(.vertical, DS.Space.xs)
@@ -194,8 +196,10 @@ struct InlineNotice: View {
 struct RecordingRow: View {
     let row: LibraryRow
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
     var body: some View {
-        HStack(spacing: DS.Space.m) {
+        AdaptiveRow(spacing: DS.Space.m) {
             VStack(alignment: .leading, spacing: 3) {
                 // Long titles wrap fully rather than truncating (section 14.6, UX14).
                 Text(row.title)
@@ -206,7 +210,7 @@ struct RecordingRow: View {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
-            Spacer(minLength: DS.Space.s)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: DS.Space.s) }
             StatusPill(text: rowStatus.0, tone: rowStatus.1)
         }
         .frame(minHeight: DS.Size.minimumTarget)
@@ -339,5 +343,19 @@ struct Card<Content: View>: View {
             .padding(DS.Space.l)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(DS.Palette.card, in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
+    }
+}
+
+/// Horizontal row that becomes a leading-aligned vertical stack at accessibility text sizes.
+struct AdaptiveRow<Content: View>: View {
+    var spacing: CGFloat = DS.Space.m
+    @ViewBuilder var content: Content
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: spacing))
+        layout { content }
     }
 }

@@ -22,7 +22,7 @@ struct SavedResultView: View {
                             .padding(.vertical, DS.Space.s)
                         Divider().padding(.leading, DS.Space.l)
                     }
-                    HStack {
+                    AdaptiveRow {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("File checks").font(.body.weight(.medium))
                             Text(StatusCopy.validation(metadata.validation)).font(.footnote).foregroundStyle(.secondary)
@@ -87,7 +87,7 @@ struct SavedResultView: View {
             let ranges = missing.prefix(3).map(\.range.description).formatted()
             return (String(localized: "Missing \(ranges)"), .warning)
         }()
-        return HStack {
+        return AdaptiveRow {
             Image(systemName: s.source.symbol).foregroundStyle(DS.Palette.accent).frame(width: 24).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(s.source.displayName).font(.body.weight(.medium))

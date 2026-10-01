@@ -100,7 +100,7 @@ struct SetupGuideView: View {
     }
 
     private func check(symbol: String, title: String, detail: String, tone: StatusTone, pill: String? = nil) -> some View {
-        HStack(alignment: .top, spacing: DS.Space.m) {
+        AdaptiveRow(spacing: DS.Space.m) {
             Image(systemName: symbol)
                 .foregroundStyle(tone == .warning ? DS.Palette.warning : tone.color)
                 .frame(width: 30, height: 30)
