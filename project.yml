@@ -92,6 +92,10 @@ targets:
     sources: [AppTests]
     dependencies:
       - target: CallCapture
+      - package: CallCaptureCore
+        product: CallCaptureCore
+      - package: CallCaptureCore
+        product: CallCaptureMedia
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.adnanzulfiqar.callcapture.tests
