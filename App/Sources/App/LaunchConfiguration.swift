@@ -18,6 +18,7 @@ struct LaunchConfiguration {
     var picker: String?
     var seedLibraryCount = 0
     var seedMediaRecording = false
+    var seedInterruptedRecording = false
     #endif
 
     static var production: LaunchConfiguration { LaunchConfiguration() }
@@ -41,6 +42,7 @@ struct LaunchConfiguration {
         c.picker = value("-UITestPicker")
         c.seedLibraryCount = Int(value("-UITestSeedLibrary") ?? "") ?? 0
         c.seedMediaRecording = args.contains("-UITestSeedMedia")
+        c.seedInterruptedRecording = args.contains("-UITestSeedInterrupted")
         if let free = value("-UITestFreeBytes").flatMap(Int64.init) { c.freeBytesOverride = free }
         if let thermal = value("-UITestThermal").flatMap(ThermalLevel.init(rawValue:)) { c.thermalOverride = thermal }
         if let appearance = value("-UITestAppearance") { c.defaults.set(appearance, forKey: "appearance") }
@@ -88,6 +90,9 @@ struct LaunchConfiguration {
         if seedMediaRecording {
             await FixtureRecordingBuilder.build(store: store, layout: layout)
         }
+        if seedInterruptedRecording {
+            await FixtureRecordingBuilder.buildInterrupted(layout: layout)
+        }
     }
     #endif
 }
@@ -133,6 +138,30 @@ enum FixtureRecordingBuilder {
         try? AtomicJSON.write(media.validation, to: dir.appendingPathComponent("validation.json"))
         try? store.save(m)
         try? FileManager.default.removeItem(at: recovery)
+    }
+
+    /// Leaves committed segments and a journal on disk without finalizing, as if the app had been
+    /// terminated mid-recording. Launch recovery must find and recover it (T24, UX11).
+    static func buildInterrupted(layout: FileLayout) async {
+        let id = UUID()
+        let contract = CaptureContract.standard(mode: .screenAndAudio)
+        let identity = SessionIdentity(sessionID: id, generation: 1, contractVersion: 1)
+        let recovery = layout.recoveryDirectory(id)
+        let writer = SegmentedTrackWriter()
+        guard (try? writer.open(identity: identity, contract: contract, recoveryDirectory: recovery, onCheckpoint: { _ in })) != nil else { return }
+        var journal = RecoveryJournal(identity: identity, contract: contract, createdAt: Date(), title: "Interrupted call")
+        journal.lastKnownCaptureEnd = 12
+        try? RecoveryFiles(directory: recovery).writeJournal(journal)
+        var t = 0.0, frame = 0.0
+        while t < 12 {
+            while frame <= t {
+                await append(writer, SampleObservation(source: .screen, range: MediaRange(startSeconds: 800 + frame, endSeconds: 800 + frame + 1.0 / 30), frame: .complete), t: frame)
+                frame += 1.0 / 30
+            }
+            await append(writer, SampleObservation(source: .microphone, range: MediaRange(startSeconds: 800 + t, endSeconds: 800 + t + 0.02), audio: .speech()), t: t)
+            t += 0.02
+        }
+        await writer.cancel()   // no finishing: only committed segments survive
     }
 
     private static func append(_ writer: SegmentedTrackWriter, _ o: SampleObservation, t: Double) async {

@@ -145,6 +145,19 @@ final class CallCaptureUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Café'")).firstMatch.waitForExistence(timeout: 2))
     }
 
+    // UX11/T24: media from an interrupted session is recovered at launch and labelled honestly.
+    func testLaunchRecoveryOfInterruptedRecording() {
+        let app = launch(["-UITestSeedInterrupted"])
+        app.tabBars.buttons["Recordings"].tap()
+        let banner = app.descendants(matching: .any)["recoveryBanner"].firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: 60))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'recovered'")).firstMatch.exists)
+        let row = app.descendants(matching: .any).matching(identifier: "libraryRow").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH 'Recovered'")).firstMatch.exists)
+        screenshot(app, "29-recovered-after-interruption")
+    }
+
     // UX11: first-use empty library has an actionable empty state.
     func testEmptyLibrary() {
         let app = launch()
