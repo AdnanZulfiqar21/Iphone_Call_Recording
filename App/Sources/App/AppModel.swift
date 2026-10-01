@@ -227,7 +227,8 @@ final class AppModel {
         guard let m = store.metadata(id), let url = store.masterURL(m) else { return }
         let reportURL = layout.recordingDirectory(id).appendingPathComponent("validation.json")
         guard var report = try? AtomicJSON.read(ValidationReport.self, from: reportURL) else { return }
-        let sources = m.contract.sources.map(\.kind).filter { s in m.sources.contains { $0.source == s && $0.everReceived } || m.sources.isEmpty }
+        // Track order in the master follows source order among the tracks it actually contains.
+        let sources = SourceKind.allCases.filter { report.durations[$0.rawValue] != nil }
         while report.coverage != .full {
             if Task.isCancelled || isSessionActive { return }   // capture always wins (rule 10)
             guard let next = try? await RecordingValidator.full(url: url, sources: sources, previous: report) else { return }

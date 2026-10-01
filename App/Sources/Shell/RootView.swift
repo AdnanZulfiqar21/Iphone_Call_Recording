@@ -51,6 +51,10 @@ struct RootView: View {
         .onAppear {
             if settings.appLockEnabled { appLock.lock() }
         }
+        .onOpenURL { url in
+            // Live Activity route back to the session (section 14.9).
+            if url.host == "record" { model.selectedTab = .record }
+        }
     }
 }
 
