@@ -162,7 +162,8 @@ final class CallCaptureUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(app.buttons["playPauseButton"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Microphone missing"].waitForExistence(timeout: 5))
-        sleep(2)
+        XCTAssertTrue(app.descendants(matching: .any)["waveformReady"].waitForExistence(timeout: 30),
+                      "waveform preview should be built from the saved media")
         screenshot(app, "17-player-gap-markers")
         app.staticTexts["Microphone missing"].tap()
         app.buttons["playPauseButton"].tap()
