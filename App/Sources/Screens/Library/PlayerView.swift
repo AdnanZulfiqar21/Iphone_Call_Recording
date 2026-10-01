@@ -58,15 +58,12 @@ struct PlayerView: View {
                     GapTimeline(duration: max(m.duration, 0.1), anomalies: m.openAnomalies, bookmarks: m.bookmarks,
                                 waveform: waveform, position: player.currentTime) { player.seek(to: $0) }
                         .frame(height: 64)
-                        .accessibilityIdentifier("gapTimeline")
+                        // "waveformReady" marks a preview built from the saved media (UX13 test hook).
+                        .accessibilityIdentifier(waveform == nil ? "gapTimeline" : "waveformReady")
                     if waveformUnavailable {
                         Text("Waveform preview unavailable. Playback still works.").font(.footnote).foregroundStyle(.secondary)
                     } else if waveform == nil {
                         Text("Loading preview…").font(.footnote).foregroundStyle(.secondary)
-                    } else {
-                        // Marker for UI tests that the preview was built from the saved media (UX13).
-                        Color.clear.frame(height: 0).accessibilityElement().accessibilityIdentifier("waveformReady")
-                            .accessibilityHidden(false)
                     }
                     TransportControls(player: player, duration: m.duration)
                 } else {
