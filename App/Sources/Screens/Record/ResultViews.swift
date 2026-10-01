@@ -43,6 +43,7 @@ struct SavedResultView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    .padding(.bottom, DS.Space.xl)
             }
             .padding(.horizontal, DS.Space.margin)
         }

@@ -197,9 +197,10 @@ struct RecordingRow: View {
     var body: some View {
         HStack(spacing: DS.Space.m) {
             VStack(alignment: .leading, spacing: 3) {
+                // Long titles wrap fully rather than truncating (section 14.6, UX14).
                 Text(row.title)
                     .font(.body.weight(.medium))
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("\(row.createdAt.formatted(date: .abbreviated, time: .shortened)) · \(StatusCopy.duration(row.duration))")
                     .font(.footnote)
                     .foregroundStyle(.secondary)

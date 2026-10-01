@@ -39,7 +39,7 @@ struct LibraryView: View {
             .listStyle(.insetGrouped)
             .overlay { emptyState(rows: rows) }
             .navigationTitle(String(localized: "Recordings"))
-            .searchable(text: $query.text, prompt: Text("Search titles"))
+            .searchable(text: $query.text, placement: .navigationBarDrawer(displayMode: .always), prompt: Text("Search titles"))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {

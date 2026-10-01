@@ -24,6 +24,16 @@ final class CallCaptureUITests: XCTestCase {
         add(attachment)
     }
 
+    /// The Pro row sits below the fold behind the floating tab bar; scroll it into view first.
+    private func openPro(_ app: XCUIApplication) {
+        let row = app.descendants(matching: .any)["proRow"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        var tries = 0
+        while !row.isHittable && tries < 5 { app.swipeUp(); tries += 1 }
+        app.swipeUp()
+        row.tap()
+    }
+
     private func startRecording(_ app: XCUIApplication) {
         let start = app.buttons["startButton"]
         XCTAssertTrue(start.waitForExistence(timeout: 10))
@@ -108,7 +118,7 @@ final class CallCaptureUITests: XCTestCase {
         XCTAssertTrue(app.buttons["newRecordingButton"].waitForExistence(timeout: 60))
         app.buttons["newRecordingButton"].tap()
         app.tabBars.buttons["Recordings"].tap()
-        XCTAssertEqual(app.cells.matching(identifier: "libraryRow").count, 1, "exactly one session was created")
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "libraryRow").count, 1, "exactly one session was created")
     }
 
     // UX12: search, filter and scroll a seeded 1,000-item library without decoding media.
@@ -143,7 +153,7 @@ final class CallCaptureUITests: XCTestCase {
     func testPlayerWithRealFixtureMedia() {
         let app = launch(["-UITestSeedMedia"])
         app.tabBars.buttons["Recordings"].tap()
-        let row = app.cells.matching(identifier: "libraryRow").firstMatch
+        let row = app.descendants(matching: .any).matching(identifier: "libraryRow").firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 60))
         row.tap()
         XCTAssertTrue(app.buttons["playPauseButton"].waitForExistence(timeout: 10))
@@ -179,7 +189,7 @@ final class CallCaptureUITests: XCTestCase {
         screenshot(app, "21-library-dark")
         app.tabBars.buttons["Settings"].tap()
         screenshot(app, "22-settings-dark")
-        app.buttons["proRow"].tap()
+        openPro(app)
         XCTAssertTrue(app.buttons["restoreButton"].waitForExistence(timeout: 10))
         screenshot(app, "23-pro-dark")
     }
@@ -188,7 +198,7 @@ final class CallCaptureUITests: XCTestCase {
     func testProScreenNeverBlocksCore() {
         let app = launch(["-UITestScenario", "normal"])
         app.tabBars.buttons["Settings"].tap()
-        app.buttons["proRow"].tap()
+        openPro(app)
         XCTAssertTrue(app.buttons["restoreButton"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["Not now"].exists)
         screenshot(app, "24-pro")

@@ -24,8 +24,7 @@ private final class CheckpointCollector: @unchecked Sendable {
 }
 
 private func log(_ s: String) {
-    FileHandle.standardError.write(Data("[media-test] \(s)
-".utf8))
+    FileHandle.standardError.write(Data(("[media-test] " + s + "\n").utf8))
 }
 
 /// Feeds real buffers into the production writer, honouring backpressure like the pipeline does.

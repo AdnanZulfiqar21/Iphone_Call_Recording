@@ -24,7 +24,7 @@ enum StatusCopy {
         case .captureEndedBySystem: return String(localized: "iOS stopped the recording. Saving what was captured…")
         case .mediaServicesReset: return String(localized: "Audio services restarted. Recording stopped safely.")
         case .requiredSourceMissingStopped: return String(localized: "A required audio source wasn't confirmed. Stopped safely and saving what was captured.")
-        case .sourceChecking(let s): return String(localized: "\(s.displayName): checking…")
+        case .sourceChecking: return String(localized: "Checking…")
         case .sourceDetected(.screen): return String(localized: "Capturing")
         case .sourceDetected: return String(localized: "Detected")
         case .sourceUnconfirmed: return String(localized: "Unconfirmed")
