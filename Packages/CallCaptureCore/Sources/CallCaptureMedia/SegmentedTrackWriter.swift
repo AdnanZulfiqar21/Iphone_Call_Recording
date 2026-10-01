@@ -250,15 +250,24 @@ final class TrackWriter: NSObject, AVAssetWriterDelegate, @unchecked Sendable {
         return input.append(buffer) ? .accepted : .rejected(.writerRejected)
     }
 
+    /// Every caller awaits the same in-flight finish, so a part closed early (format change) is
+    /// fully committed before the session's finish() returns.
+    private var finishing: Task<Void, Never>?
+
     func finish() async {
-        let shouldFinish: Bool = lock.withLock {
-            guard !closed else { return false }
+        let task: Task<Void, Never> = lock.withLock {
+            if let finishing { return finishing }
+            let shouldFinish = !closed && writer.status == .writing
             closed = true
-            return writer.status == .writing
+            let t = Task { [writer, input] in
+                guard shouldFinish else { return }
+                input.markAsFinished()
+                await writer.finishWriting()
+            }
+            finishing = t
+            return t
         }
-        guard shouldFinish else { return }
-        input.markAsFinished()
-        await writer.finishWriting()
+        await task.value
     }
 
     func finishAsync() {
