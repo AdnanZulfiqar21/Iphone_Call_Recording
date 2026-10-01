@@ -52,20 +52,32 @@ public struct RecoveryManifest: Codable, Sendable, Hashable {
         public var sources: [SourceKind]
         public var byteCount: Int
         public var sha256: String
+        /// Format epoch of the track this segment belongs to (nil = epoch 0).
+        public var epoch: Int?
 
-        public init(sequence: Int, fileName: String, sessionRange: MediaRange, sources: [SourceKind], byteCount: Int, sha256: String) {
+        public init(sequence: Int, fileName: String, sessionRange: MediaRange, sources: [SourceKind], byteCount: Int, sha256: String, epoch: Int? = nil) {
             self.sequence = sequence
             self.fileName = fileName
             self.sessionRange = sessionRange
             self.sources = sources
             self.byteCount = byteCount
             self.sha256 = sha256
+            self.epoch = epoch
         }
+    }
+
+    /// Per-track initialization data when each source is written as its own track (preserves provenance).
+    public struct TrackInitialization: Codable, Sendable, Hashable {
+        public var source: SourceKind
+        public var fileName: String
+        public var sha256: String
+        public var epoch: Int?
     }
 
     public var schemaVersion: Int
     public var sessionID: UUID
     public var format: String
+    public var trackInitializations: [TrackInitialization]?
     /// Initialization data (fMP4 "ftyp+moov"); fragments are not playable without it.
     public var initializationFileName: String?
     public var initializationSHA256: String?
@@ -79,6 +91,12 @@ public struct RecoveryManifest: Codable, Sendable, Hashable {
     }
 
     public var committedEnd: Double { segments.map(\.sessionRange.end.seconds).max() ?? 0 }
+
+    public var tracks: [TrackInitialization] { trackInitializations ?? [] }
+
+    public func segments(for source: SourceKind) -> [Segment] {
+        segments.filter { $0.sources.contains(source) }.sorted { $0.sequence < $1.sequence }
+    }
 }
 
 /// Writes journal/manifest atomically in the session's recovery directory.

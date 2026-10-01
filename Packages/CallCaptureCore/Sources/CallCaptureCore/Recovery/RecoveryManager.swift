@@ -103,6 +103,13 @@ public final class RecoveryManager: @unchecked Sendable {
             candidate.reason = "Required setup data for this recording is missing"
             return candidate
         }
+        for track in manifest.tracks {
+            let url = files.initializationDirectory.appendingPathComponent(track.fileName)
+            guard let data = try? Data(contentsOf: url), SHA256Hasher.hex(of: data) == track.sha256 else {
+                candidate.reason = "Required setup data for this recording is missing"
+                return candidate
+            }
+        }
         for segment in manifest.segments.sorted(by: { $0.sequence < $1.sequence }) {
             let url = files.segmentsDirectory.appendingPathComponent(segment.fileName)
             if let data = try? Data(contentsOf: url), data.count == segment.byteCount, SHA256Hasher.hex(of: data) == segment.sha256 {

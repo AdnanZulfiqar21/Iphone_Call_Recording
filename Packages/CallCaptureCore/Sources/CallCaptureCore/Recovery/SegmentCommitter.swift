@@ -22,26 +22,44 @@ public final class SegmentCommitter: @unchecked Sendable {
 
     public var currentManifest: RecoveryManifest { lock.lock(); defer { lock.unlock() }; return manifest }
 
-    public func commitInitialization(_ data: Data) throws {
+    /// Commits initialization data, once per track when `source` is given.
+    public func commitInitialization(_ data: Data, source: SourceKind? = nil, epoch: Int = 0) throws {
         lock.lock(); defer { lock.unlock() }
-        let name = "init.mp4"
+        let name = source.map { "init-\($0.rawValue)-e\(epoch).mp4" } ?? "init.mp4"
         let url = files.initializationDirectory.appendingPathComponent(name)
         try data.write(to: url, options: protectedAtomic)
-        manifest.initializationFileName = name
-        manifest.initializationSHA256 = SHA256Hasher.hex(of: data)
+        let hash = SHA256Hasher.hex(of: data)
+        if manifest.initializationFileName == nil {
+            manifest.initializationFileName = name
+            manifest.initializationSHA256 = hash
+        }
+        if let source {
+            var tracks = manifest.trackInitializations ?? []
+            tracks.removeAll { $0.source == source && ($0.epoch ?? 0) == epoch }
+            tracks.append(.init(source: source, fileName: name, sha256: hash, epoch: epoch))
+            manifest.trackInitializations = tracks
+        }
         try files.writeManifest(manifest)
     }
 
+    public func hasInitialization(for source: SourceKind, epoch: Int = 0) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return manifest.tracks.contains { $0.source == source && ($0.epoch ?? 0) == epoch }
+    }
+
     /// Commits one media segment and returns the checkpoint receipt.
-    public func commitSegment(_ data: Data, sessionRange: MediaRange, sources: [SourceKind]) throws -> CheckpointReport {
+    public func commitSegment(_ data: Data, sessionRange: MediaRange, sources: [SourceKind], epoch: Int = 0) throws -> CheckpointReport {
         lock.lock(); defer { lock.unlock() }
         guard manifest.initializationFileName != nil else { throw CommitError.missingInitialization }
         guard !data.isEmpty, !sessionRange.isEmpty else { throw CommitError.emptySegment }
-        if let last = manifest.segments.last, sessionRange.start.seconds < last.sessionRange.start.seconds {
+        // Ordering is per track: interleaved tracks may finish segments in any order.
+        if let last = manifest.segments.last(where: { $0.sources == sources && ($0.epoch ?? 0) == epoch }),
+           sessionRange.start.seconds < last.sessionRange.start.seconds {
             throw CommitError.outOfOrder
         }
         let sequence = (manifest.segments.last?.sequence ?? -1) + 1
-        let name = String(format: "seg-%06d.m4s", sequence)
+        let suffix = sources.count == 1 ? "-\(sources[0].rawValue)-e\(epoch)" : ""
+        let name = String(format: "seg-%06d", sequence) + suffix + ".m4s"
         let staging = files.segmentsDirectory.appendingPathComponent(name + ".staging")
         let final = files.segmentsDirectory.appendingPathComponent(name)
         try data.write(to: staging, options: protectedAtomic)                                   // 1–2
@@ -51,7 +69,8 @@ public final class SegmentCommitter: @unchecked Sendable {
         try fm.moveItem(at: staging, to: final)
         if fault == .failBeforeManifest { throw CommitError.injectedFault }
         let segment = RecoveryManifest.Segment(sequence: sequence, fileName: name, sessionRange: sessionRange,
-                                               sources: sources, byteCount: data.count, sha256: hash)
+                                               sources: sources, byteCount: data.count, sha256: hash,
+                                               epoch: sources.count == 1 ? epoch : nil)
         manifest.segments.append(segment)
         try files.writeManifest(manifest)                                                         // 4
         return CheckpointReport(sequence: sequence, sessionRange: sessionRange, sources: sources,

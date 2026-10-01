@@ -1,0 +1,55 @@
+name: CI
+on:
+  push:
+    branches: [main, 'phase/**']
+    paths-ignore: ['docs/**', '**/*.md']
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  DEVELOPER_DIR: /Applications/Xcode_27.app/Contents/Developer
+
+jobs:
+  core-linux:
+    name: Core tests (Swift 6.2, Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: swift:6.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift test
+        working-directory: Packages/CallCaptureCore
+        run: swift test 2>&1 | tee core-linux-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: core-linux-tests, path: Packages/CallCaptureCore/core-linux-tests.log, retention-days: 7 }
+
+  package-macos:
+    name: Package tests + iOS SDK compile (Xcode 27)
+    runs-on: xcode-27
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: swift test (macOS host, includes AVFoundation media tests)
+        working-directory: Packages/CallCaptureCore
+        run: swift test 2>&1 | tee package-macos-tests.log
+      - name: Compile package for iOS 27 device SDK (ScreenCaptureKit engine)
+        working-directory: Packages/CallCaptureCore
+        run: |
+          xcodebuild -scheme CallCaptureCore-Package -destination 'generic/platform=iOS' -configuration Release \
+            -derivedDataPath /tmp/dd-pkg CODE_SIGNING_ALLOWED=NO build 2>&1 | tee package-ios-build.log | grep -E "error|warning: |BUILD" || true
+          grep -q "BUILD SUCCEEDED" package-ios-build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-macos-logs
+          path: |
+            Packages/CallCaptureCore/package-macos-tests.log
+            Packages/CallCaptureCore/package-ios-build.log
+          retention-days: 7
