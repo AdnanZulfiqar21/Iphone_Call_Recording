@@ -52,7 +52,7 @@ struct SettingsView: View {
                     }
                     .accessibilityIdentifier("proRow")
                 } footer: {
-                    Text("Recording, warnings, playback and your files are always free.")
+                    Text("Recording, warnings, playback, export and your files are always free.")
                 }
                 Section {
                     LabeledContent(String(localized: "Version"), value: AppInfo.versionString)

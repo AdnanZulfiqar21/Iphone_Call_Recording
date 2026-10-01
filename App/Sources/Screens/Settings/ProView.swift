@@ -15,21 +15,20 @@ struct ProView: View {
                     Image(systemName: "star.circle.fill").font(.system(size: 40)).foregroundStyle(DS.Palette.accent)
                         .accessibilityHidden(true)
                     Text("CallCapture Pro").font(.title2.weight(.bold))
-                    Text("Extras for people who record often. One purchase, no subscription.")
+                    Text("Extras for people who review recordings in depth. One purchase, no subscription.")
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, DS.Space.s)
             }
             Section(String(localized: "Included with Pro")) {
-                Label("Advanced organisation and bookmark tools", systemImage: "folder.badge.gearshape")
-                Label("Export presets", systemImage: "square.and.arrow.up.on.square")
-                Label("Detailed recording history", systemImage: "clock")
-                Label("App Lock convenience options", systemImage: "lock")
+                Label("Detailed technical report for each recording", systemImage: "doc.text.magnifyingglass")
+                Label("More library sorting: longest, shortest, title", systemImage: "arrow.up.arrow.down")
             }
             Section(String(localized: "Always free")) {
                 Label("Recording and missing-audio warnings", systemImage: "record.circle")
-                Label("Playback, rename, delete and export", systemImage: "play.rectangle")
-                Label("Recovery and file protection", systemImage: "lock.shield")
+                Label("Playback, bookmarks, rename, delete and export", systemImage: "play.rectangle")
+                Label("Recovery, App Lock and file protection", systemImage: "lock.shield")
+                Label("Which sources were captured and every missing section", systemImage: "exclamationmark.triangle")
             }
             Section { purchaseArea }
         }

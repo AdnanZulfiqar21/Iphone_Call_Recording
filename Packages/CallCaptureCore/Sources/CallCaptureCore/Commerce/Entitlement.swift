@@ -12,11 +12,13 @@ public enum EntitlementState: String, Codable, Sendable {
 public enum Feature: String, Codable, Sendable, CaseIterable {
     case record, healthWarnings, playback, rename, delete, standardExport, recovery
     case basicSearch, outcomeFilters, bookmarks, storageView, diagnosticsExport, appearance
-    case advancedOrganization, exportPresets, detailedHistory, appLockConvenience
+    /// Pro: extra library sorting and the detailed technical report. Basic gap information,
+    /// warnings and all owned-file actions stay free (section 21).
+    case advancedOrganization, detailedHistory
 
     public var requiresPro: Bool {
         switch self {
-        case .advancedOrganization, .exportPresets, .detailedHistory, .appLockConvenience: return true
+        case .advancedOrganization, .detailedHistory: return true
         default: return false
         }
     }

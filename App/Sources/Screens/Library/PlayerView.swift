@@ -20,6 +20,8 @@ struct PlayerView: View {
     @State private var renaming = false
     @State private var renameText = ""
     @State private var confirmDelete = false
+    @State private var showReport = false
+    @State private var showPro = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -93,6 +95,13 @@ struct PlayerView: View {
                 }
                 LabeledContent(String(localized: "File checks"), value: StatusCopy.validation(m.validation))
                 LabeledContent(String(localized: "Size"), value: StatusCopy.bytes(Int64(m.byteCount)))
+                Button {
+                    if entitlements.isAvailable(.detailedHistory) { showReport = true } else { showPro = true }
+                } label: {
+                    Label(entitlements.isPro ? String(localized: "Detailed technical report") : String(localized: "Detailed technical report (Pro)"),
+                          systemImage: entitlements.isPro ? "doc.text.magnifyingglass" : "lock")
+                }
+                .frame(minHeight: DS.Size.minimumTarget)
                 Text("A playable file doesn't prove everyone in a call was recorded.").font(.footnote).foregroundStyle(.secondary)
             }
 
@@ -125,6 +134,8 @@ struct PlayerView: View {
         .onDisappear { player.pause() }
         .onChange(of: model.isSessionActive) { _, active in if active { player.pause() } }   // section 14.6
         .sheet(isPresented: $showExport) { ExportSheet(metadata: m) }
+        .sheet(isPresented: $showReport) { NavigationStack { TechnicalReportView(metadata: m) } }
+        .sheet(isPresented: $showPro) { NavigationStack { ProView() } }
         .alert(String(localized: "Bookmark at \(TimeFormatting.clock(player.currentTime))"), isPresented: $showBookmarkPrompt) {
             TextField("Label", text: $bookmarkLabel)
             Button("Add") {

@@ -5,6 +5,8 @@ import CallCaptureCore
 /// filters. Separate first-use empty, no-results and needs-attention states. Rows never decode media.
 struct LibraryView: View {
     @Environment(AppModel.self) private var model
+    @Environment(EntitlementService.self) private var entitlements
+    @State private var showPro = false
     @State private var query = LibraryQuery()
     @State private var renaming: LibraryRow?
     @State private var renameText = ""
@@ -47,6 +49,19 @@ struct LibraryView: View {
                             Text("Newest first").tag(LibrarySort.newest)
                             Text("Oldest first").tag(LibrarySort.oldest)
                         }
+                        Section(entitlements.isPro ? String(localized: "More sorting") : String(localized: "More sorting with Pro")) {
+                            ForEach([LibrarySort.longest, .shortest, .title], id: \.self) { option in
+                                Button {
+                                    if entitlements.isAvailable(.advancedOrganization) { query.sort = option } else { showPro = true }
+                                } label: {
+                                    if entitlements.isPro {
+                                        Label(sortTitle(option), systemImage: query.sort == option ? "checkmark" : "arrow.up.arrow.down")
+                                    } else {
+                                        Label(sortTitle(option), systemImage: "lock")
+                                    }
+                                }
+                            }
+                        }
                     } label: {
                         Label("Sort", systemImage: "arrow.up.arrow.down")
                     }
@@ -54,6 +69,7 @@ struct LibraryView: View {
                 }
             }
             .navigationDestination(for: UUID.self) { id in PlayerView(recordingID: id) }
+            .sheet(isPresented: $showPro) { NavigationStack { ProView() } }
             .alert(String(localized: "Rename recording"), isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("Title", text: $renameText)
                 Button("Save") {
@@ -73,6 +89,16 @@ struct LibraryView: View {
                 Text("This removes the recording and its saved data from this iPhone. Copies you've already shared or exported aren't affected. This can't be undone.")
             }
             .refreshable { model.refreshLibrary() }
+        }
+    }
+
+    private func sortTitle(_ s: LibrarySort) -> String {
+        switch s {
+        case .newest: return String(localized: "Newest first")
+        case .oldest: return String(localized: "Oldest first")
+        case .longest: return String(localized: "Longest first")
+        case .shortest: return String(localized: "Shortest first")
+        case .title: return String(localized: "Title A–Z")
         }
     }
 

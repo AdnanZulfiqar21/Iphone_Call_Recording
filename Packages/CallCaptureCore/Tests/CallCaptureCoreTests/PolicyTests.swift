@@ -56,7 +56,7 @@ struct PolicyTests {
         var rows: [LibraryRow] = []
         for i in 0..<1_000 {
             var m = RecordingMetadata(id: UUID(), title: i % 50 == 0 ? "Café meeting \(i)" : "Call \(i)", createdAt: base.addingTimeInterval(Double(i)),
-                                      duration: 60, masterFileName: "m", byteCount: 1, contract: screenMicContract,
+                                      duration: Double(60 + (i * 37) % 900), masterFileName: "m", byteCount: 1, contract: screenMicContract,
                                       outcome: i % 10 == 0 ? .savedPartial : (i % 25 == 0 ? .recovered : .saved),
                                       completeness: .noKnownGaps, validation: .basicChecksPassed, libraryState: .available,
                                       sources: [], anomalies: [])
@@ -71,6 +71,10 @@ struct PolicyTests {
         let oldest = LibraryQuery(sort: .oldest).apply(to: rows)
         #expect(oldest.first?.title == "Café meeting 0")
         #expect(LibraryQuery(text: "zzz").apply(to: rows).isEmpty)
+        let longest = LibraryQuery(sort: .longest).apply(to: rows)
+        #expect(longest.first!.duration >= longest.last!.duration)
+        let byTitle = LibraryQuery(sort: .title).apply(to: rows)
+        #expect(byTitle.first!.title.localizedStandardCompare(byTitle.last!.title) != .orderedDescending)
         #expect(Date().timeIntervalSince(start) < 2)
     }
 
@@ -121,9 +125,9 @@ struct PolicyTests {
         for state in [EntitlementState.unknown, .free, .revoked, .pro] {
             for f in core { #expect(EntitlementPolicy.isAvailable(f, cache: EntitlementCache(state: state))) }
         }
-        #expect(!EntitlementPolicy.isAvailable(.exportPresets, cache: EntitlementCache(state: .free)))
-        #expect(EntitlementPolicy.isAvailable(.exportPresets, cache: EntitlementCache(state: .unknown, verifiedAt: Date(), productID: "pro")))
-        #expect(!EntitlementPolicy.isAvailable(.exportPresets, cache: EntitlementCache(state: .unknown)))
+        #expect(!EntitlementPolicy.isAvailable(.detailedHistory, cache: EntitlementCache(state: .free)))
+        #expect(EntitlementPolicy.isAvailable(.detailedHistory, cache: EntitlementCache(state: .unknown, verifiedAt: Date(), productID: "pro")))
+        #expect(!EntitlementPolicy.isAvailable(.detailedHistory, cache: EntitlementCache(state: .unknown)))
         #expect([Feature.record, .healthWarnings, .playback, .rename, .delete, .standardExport, .recovery].allSatisfy { !$0.requiresPro })
     }
 

@@ -37,7 +37,7 @@ final class EntitlementService {
         }
     }
 
-    var isPro: Bool { EntitlementPolicy.isAvailable(.exportPresets, cache: cache) }
+    var isPro: Bool { EntitlementPolicy.isAvailable(.detailedHistory, cache: cache) }
 
     func isAvailable(_ feature: Feature) -> Bool { EntitlementPolicy.isAvailable(feature, cache: cache) }
 

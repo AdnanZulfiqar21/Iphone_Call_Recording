@@ -2,6 +2,10 @@ import Foundation
 
 public enum LibrarySort: String, Codable, Sendable, CaseIterable {
     case newest, oldest
+    /// Pro sorting options (section 21 "advanced organization").
+    case longest, shortest, title
+
+    public var requiresPro: Bool { self == .longest || self == .shortest || self == .title }
 }
 
 public enum LibraryFilter: String, Codable, Sendable, CaseIterable {
@@ -66,8 +70,17 @@ public struct LibraryQuery: Sendable, Equatable {
             return row.title.range(of: needle, options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive]) != nil
         }
         return filtered.sorted { a, b in
-            if a.createdAt == b.createdAt { return a.id.uuidString < b.id.uuidString }   // stable identity
-            return sort == .newest ? a.createdAt > b.createdAt : a.createdAt < b.createdAt
+            switch sort {
+            case .longest where a.duration != b.duration: return a.duration > b.duration
+            case .shortest where a.duration != b.duration: return a.duration < b.duration
+            case .title:
+                let order = a.title.localizedStandardCompare(b.title)
+                if order != .orderedSame { return order == .orderedAscending }
+            case .newest where a.createdAt != b.createdAt: return a.createdAt > b.createdAt
+            case .oldest where a.createdAt != b.createdAt: return a.createdAt < b.createdAt
+            default: break
+            }
+            return a.id.uuidString < b.id.uuidString   // stable identity
         }
     }
 }
