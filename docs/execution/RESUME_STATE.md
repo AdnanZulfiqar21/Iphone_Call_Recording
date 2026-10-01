@@ -1,7 +1,7 @@
 # Resume state
 
 **Updated:** 1 October 2026
-**Branch:** `phase/p00-foundation` (P00–P12 work lands here first, then merges to `main`)
+**Branch:** `main` (P00–P12 merged from `phase/p08-app-build`)
 **Authorization:** `docs/execution/AUTONOMOUS_BUILD_AUTHORIZATION.md`
 
 ## Where things are
@@ -21,4 +21,8 @@
 
 ## Next concrete action
 
-See the "Next action" line at the top of `docs/execution/PROGRESS.md`.
+1. Independent review of `main` using `docs/reviews/CURSOR_REVIEW_INDEX.md` (handoff, UX18, F-UX08-01).
+2. Owner provides Apple Developer / App Store Connect access and final bundle ID (BLOCKERS B01, B04).
+3. P13: signed archive + TestFlight; then P14 physical iPhone validation per roadmap section 19.
+
+Focused CI reruns: `gh workflow run ci.yml --ref main -f only_testing=CallCaptureUITests/CallCaptureUITests/<test>`.

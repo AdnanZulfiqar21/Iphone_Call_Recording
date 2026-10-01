@@ -5,14 +5,14 @@ Cursor (independent reviewer) has not been available in this execution session. 
 | Phase | Scope | Reviewed SHA | Independent review | Author-side checks | Open findings |
 |---|---|---|---|---|---|
 | Roadmap v2.2 | Gap review of v2.1 | c99a10c | INDEPENDENT_REVIEW_PENDING | `docs/roadmap/ROADMAP_REVIEW_v2.2.md` | — |
-| P00–P12 (M1 candidate) | Complete V1 build, non-device verification | see handoff below | INDEPENDENT_REVIEW_PENDING | CI run 36839880635 all green; release audit 18/18; contrast 32/32 | None open from author-side checks |
+| P00–P12 (M1 candidate) | Complete V1 build, non-device verification | `main` (app code `d7b2ddf`) | INDEPENDENT_REVIEW_PENDING | CI runs 36839880635, 36856930397, 36867785513, 36879541190; release audit 18/18; contrast 32/32 | F-UX08-01 (SEV-3, intermittent audit flag) |
 
 ## M1 handoff (P00–P12)
 
 ```text
 Phase / scope: P00–P12 complete V1 build (roadmap v2.2), M1 candidate
 Starting commit: 1081013 (roadmap + mockup only)
-Final commit: see docs/execution/RESUME_STATE.md (main)
+Final commit: main (app/package code unchanged since d7b2ddf)
 Implemented requirements: docs/execution/M1_BUILD_AUDIT.md
 Tests actually run and results: docs/execution/PROGRESS.md (evidence log);
   CI run 36839880635: core Linux PASS; macOS 27 package tests PASS; iOS 27 device-SDK compile PASS;

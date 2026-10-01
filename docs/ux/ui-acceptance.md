@@ -15,7 +15,7 @@ Status keys: `PASS (sim)` = automated simulator/static evidence passed; `PARTIAL
 | UX05 | Hit areas ≥ 44 pt, primary 56 pt; visible alternatives to swipe | `performAccessibilityAudit(.hitRegion)` passed on Record, Recordings, Settings; context menus + accessibility actions mirror swipe actions | PASS (sim) |
 | UX06 | Unknown/stale/limited/partial/recovered produce exact truthful labels; resumed audio keeps the gap | Core `truthfulCopy`, `resumeKeepsGap`; app `CopyAndSettingsTests` (5/5); UI `testGapNoticePersistsAfterResume` passed (screens 07, 08) | PASS (sim) |
 | UX07 | Repeated Start/Stop, tab changes, sheet dismissal don't duplicate sessions | Core `doubleRecordAndStop` + property test; UI `testTabSwitchRestoresSessionAndStripStops` passed (exactly one recording) | PASS (sim) |
-| UX08 | Accessibility hierarchy/labels/values; timer not announced each tick | `testAccessibilityAudit` passed (dynamicType, elementDetection, hitRegion, sufficientElementDescription); announcements only on new gap/stop | PASS (sim, automated audit only) |
+| UX08 | Accessibility hierarchy/labels/values; timer not announced each tick | `testAccessibilityAudit` (dynamicType, elementDetection, hitRegion, sufficientElementDescription) passed in 5 of 7 runs; 2 runs flagged "Potentially inaccessible text" on Recordings intermittently, element not yet identified — per-issue logging added (OPEN finding F-UX08-01) | PARTIAL (intermittent audit flag open) |
 | UX09 | Reduce Motion / Transparency / Increase Contrast keep content clear | Increase Contrast enabled via `simctl ui` and two flows re-run (screens *-increased-contrast); HC colour variants measured 32/32. Reduce Motion/Transparency toggles not automatable via simctl — code paths disable pulse/transitions | PARTIAL (Reduce Motion pending reviewer/device) |
 | UX10 | Cancel/deny/unsupported have next actions; native picker not imitated | `testPickerCancelledDeniedUnsupported` passed (screens 09–11) | PASS (sim) |
 | UX11 | Empty, no-results, loading, error, timeout, recovery states actionable | `testEmptyLibrary`, search no-results, waveform loading state, core `finalizeHangs`; `testLaunchRecoveryOfInterruptedRecording` recovers an interrupted session at launch and labels it "Recovered, partial" with an honest banner (screen 29) | PASS (sim) |
@@ -31,3 +31,9 @@ Status keys: `PASS (sim)` = automated simulator/static evidence passed; `PARTIAL
 
 Run [36839880635](https://github.com/AdnanZulfiqar21/Iphone_Call_Recording/actions/runs/36839880635) at `835c35d` on `xcode-27` (Xcode 27.0, iOS 27.0 simulators) — all jobs green:
 15/15 UI tests on iPhone 17 Pro; 3/3 layout tests on iPhone 17e and iPhone 18 Pro Max; 2/2 flows with Increase Contrast; 11/11 app-hosted Swift Testing tests (6 AVFoundation pipeline tests). Screenshots (downscaled 50%): `docs/ux/evidence/run-36839880635/`.
+
+## Later runs (same app code as `d7b2ddf`/`9a15778`)
+
+- Run 36856930397 (`990f664`, writer race fix): 11/11 app-hosted, 16/16 UI, small + large layouts, Increase Contrast (after one retry), Release build, audit 18/18 — job then exceeded its 90-minute limit during artifact upload (limit raised to 120).
+- Run 36867785513 (`d7b2ddf`): all of the above passed except `testAccessibilityAudit` (F-UX08-01).
+- Run 36879541190 (`9a15778`, focused dispatch): accessibility audit, layouts, Increase Contrast, Release build and audit — all jobs green.

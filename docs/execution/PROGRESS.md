@@ -1,6 +1,6 @@
 # Progress
 
-**Next action:** confirm the latest CI run on `phase/p08-app-build` is green, merge to `main`, then hand off to the independent reviewer (B03). After acceptance and owner signing access (B01): P13 TestFlight, then P14 physical testing.
+**Next action:** independent review of `main` (B03) incl. UX18 and open finding F-UX08-01; then P13 TestFlight once the owner provides signing access (B01); then P14 physical testing.
 
 Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 **Impl** = code written · **Build/Test** = checks actually executed (evidence) · **Review** = independent review · **Device** = physical iPhone.
@@ -34,3 +34,20 @@ Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 | 2026-10-01 | run 36833134634 | iPhone 17e / iPhone 18 Pro Max sims | 3 layout-sensitive UI tests each | all passed (large run marked failed only by a post-run diagnostics-collection timeout; disabled since) |
 | 2026-10-01 | run 36833134634 | `xcode-27` | Unsigned Release build `generic/platform=iOS` + `scripts/release_audit.sh` | BUILD SUCCEEDED; audit 18/18 PASS |
 | 2026-10-01 | local | Python | `scripts/contrast_check.py` | 32/32 PASS |
+| 2026-10-01 | run 36856930397 (`990f664`) | `xcode-27` | Full app job after writer race fix (T16 found it) | 11/11 + 16/16 + layouts + contrast + Release + audit PASS; job hit 90-min limit at upload |
+| 2026-10-01 | run 36867785513 (`d7b2ddf`) | `xcode-27` | Full app job | all PASS except intermittent accessibility-audit flag (F-UX08-01) |
+| 2026-10-01 | run 36879541190 (`9a15778`) | `xcode-27` | Focused dispatch: audit + layouts + contrast + Release + audit | all jobs green |
+
+## Open findings (author-side)
+
+| ID | Severity | Finding | Status |
+|---|---|---|---|
+| F-UX08-01 | SEV-3 | Accessibility audit intermittently flags "Potentially inaccessible text" on Recordings (2 of 7 runs); element not yet captured | OPEN — per-issue logging added; reviewer to confirm |
+
+## Defects found and fixed during non-device verification
+
+- Writer: early-closed track part could miss its tail at Stop (race) — fixed (`990f664`).
+- Validator: holes rendered as silence by decoders were missed — now read from edit segments.
+- Writer: audio timestamp gaps could be closed up — new track part per discontinuity.
+- UI: dark-mode filled-button contrast (2.1–3.1:1) — new fill tokens; largest-text mid-word breaks — adaptive rows; truncated titles; hidden search field; unbuilt Pro features removed from marketing copy.
+- Resource governance only at Start — now evaluated every second during capture with protected stop.
