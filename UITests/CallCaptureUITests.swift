@@ -266,10 +266,15 @@ final class CallCaptureUITests: XCTestCase {
             issue.element?.elementType == .tabBar
         }
         app.tabBars.buttons["Recordings"].tap()
+        // Audit the settled screen, not a list that is still populating.
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
+        sleep(1)
         try app.performAccessibilityAudit(for: [.dynamicType, .elementDetection, .hitRegion]) { issue in
             issue.element?.elementType == .tabBar || issue.element?.elementType == .searchField
         }
         app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
+        sleep(1)
         try app.performAccessibilityAudit(for: [.dynamicType, .elementDetection, .hitRegion])
     }
 }

@@ -18,13 +18,13 @@ Status keys: `PASS (sim)` = automated simulator/static evidence passed; `PARTIAL
 | UX08 | Accessibility hierarchy/labels/values; timer not announced each tick | `testAccessibilityAudit` passed (dynamicType, elementDetection, hitRegion, sufficientElementDescription); announcements only on new gap/stop | PASS (sim, automated audit only) |
 | UX09 | Reduce Motion / Transparency / Increase Contrast keep content clear | Increase Contrast enabled via `simctl ui` and two flows re-run (screens *-increased-contrast); HC colour variants measured 32/32. Reduce Motion/Transparency toggles not automatable via simctl — code paths disable pulse/transitions | PARTIAL (Reduce Motion pending reviewer/device) |
 | UX10 | Cancel/deny/unsupported have next actions; native picker not imitated | `testPickerCancelledDeniedUnsupported` passed (screens 09–11) | PASS (sim) |
-| UX11 | Empty, no-results, loading, error, timeout, recovery states actionable | `testEmptyLibrary`, search no-results, core `finalizeHangs` and recovery suites passed; recovery banner not yet screenshot-verified | PARTIAL |
+| UX11 | Empty, no-results, loading, error, timeout, recovery states actionable | `testEmptyLibrary`, search no-results, waveform loading state, core `finalizeHangs`; `testLaunchRecoveryOfInterruptedRecording` recovers an interrupted session at launch and labels it "Recovered, partial" with an honest banner (screen 29) | PASS (sim) |
 | UX12 | 1,000-item library search/sort/filter without media decoding | Core `largeLibrary` (<2 s); UI `testLargeLibrarySearchFilter` passed with 1,000 seeded rows (screens 13–15) | PASS (sim) |
 | UX13 | Real fixture waveform/markers/seek/export agree with saved media | `testPlayerWithRealFixtureMedia` waits for a waveform built from the saved media; gap drawn as gap (screen 17); markers, seek, play, export sheet | PASS (sim) |
 | UX14 | Long names, Unicode, locale formatting, RTL readiness | Long and Urdu titles wrap fully; pseudo-RTL run mirrors layout (screens 27–28); locale format styles | PASS (sim, English only shipped) |
 | UX15 | Declined/offline/restored purchase never blocks core | Core `entitlement`; UI `testProScreenNeverBlocksCore` passed (screen 24) | PASS (sim) |
 | UX16 | Injected load disables optional visuals; Stop/fault deadlines kept | `-UITestThermal fair` → governor CONSERVE → meter hidden with notice, Stop works (screen 26); core low-storage protected stop test | PASS (sim) |
-| UX17 | Active-session navigation and Live Activity stale/interrupted states | Strip test; `LiveActivityController` stale date 45 s | PARTIAL (Live Activity not rendered in tests) |
+| UX17 | Active-session navigation and Live Activity stale/interrupted states | Strip routes back and stops (screen 12, UI test); Live Activity uses a 45 s stale date and "Status not updated" copy, compiled and embedded; lock-screen rendering not automatable in CI | PARTIAL (Live Activity rendering → reviewer/P14) |
 | UX18 | Unassisted task by an independent reviewer in the simulator | Requires independent reviewer | PENDING (needs reviewer) |
 
 ## Evidence run
