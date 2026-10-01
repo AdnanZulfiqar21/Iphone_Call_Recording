@@ -37,7 +37,7 @@ final class AppModel {
         self.settings = settings
         let layout: FileLayout
         do {
-            layout = launch.storageRoot.map(FileLayout.init(root:)) ?? (try FileLayout.applicationSupport())
+            layout = try launch.storageRoot.map(FileLayout.init(root:)) ?? FileLayout.applicationSupport()
         } catch {
             layout = FileLayout(root: FileManager.default.temporaryDirectory.appendingPathComponent("CallCapture"))
         }
@@ -66,9 +66,13 @@ final class AppModel {
         #if DEBUG
         if let engine = launch.syntheticEngine() { return engine }
         #endif
+        #if canImport(ScreenCaptureKit)
+        // ScreenCaptureKit is in the iOS 27 device SDK; the simulator SDK may not provide it,
+        // in which case Start explains that capture is unavailable (simulator runs use fixtures).
         if #available(iOS 27.0, *) {
             return ScreenCaptureKitEngine()
         }
+        #endif
         return UnavailableCaptureEngine()
     }
 

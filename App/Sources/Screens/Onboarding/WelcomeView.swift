@@ -1,4 +1,5 @@
 import SwiftUI
+import CallCaptureCore
 
 /// First launch (section 14.3): short value statement, honest capability summary,
 /// non-blocking consent notice, no account, no permission barrage, no purchase.
