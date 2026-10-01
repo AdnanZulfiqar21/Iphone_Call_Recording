@@ -1,14 +1,39 @@
-# CallCapture — Complete Development Roadmap v2.1
+# CallCapture — Complete Development Roadmap v2.2
 
 **Delivery strategy:** Build the complete application first; perform physical iPhone testing afterwards.
 **Date:** 1 October 2026 — Europe/London
-**Revision:** Professional/premium UX/UI is mandatory V1 scope, with implementation tasks and acceptance gates before the complete-build milestone.
+**Revision:** v2.2 — gap/consistency review of v2.1 (see section 0). v2.1 made professional/premium UX/UI mandatory V1 scope, with implementation tasks and acceptance gates before the complete-build milestone.
 **Platform:** Native iPhone application, Swift / SwiftUI
-**Repository:** Adnan-Zulfiqar/Iphone_Call_Recorder
+**Repository:** [AdnanZulfiqar21/Iphone_Call_Recording](https://github.com/AdnanZulfiqar21/Iphone_Call_Recording) (supersedes the earlier `Adnan-Zulfiqar/Iphone_Call_Recorder` reference)
+**Roadmap path:** `docs/roadmap/CallCapture_Development_Roadmap_v2_Build_First.md`
 **Development roles:** Claude implements; Cursor independently reviews.
-**Document status:** New planning baseline requested by the user. This document does not report an implemented or validated application.
-**Source:** CallCapture_Complete_Development_Roadmap(1).md, plus both review rounds in this conversation.
-**Source SHA-256:** 90ad8d458bcdb36c9ba93d5b51e136fadc8859c60b6334e39350752f8b1e4e29
+**Document status:** Planning baseline. This document does not report an implemented or validated application.
+**Source:** CallCapture_Complete_Development_Roadmap(1).md, plus both review rounds in the planning conversation. That source file is not stored in this repository; the v2.1 text committed as this file's first revision is the retained baseline.
+**v2.1 baseline SHA-256 (as committed):** ddc86299c14da6bdfc63d7c55c5fc0d082909b59cfb94d5c66934588c847e2ad
+**Original source SHA-256 (as recorded in v2.1, file not in repository):** 90ad8d458bcdb36c9ba93d5b51e136fadc8859c60b6334e39350752f8b1e4e29
+
+## 0. Revision v2.2 — review findings and changes
+
+v2.2 keeps every v2.1 requirement, rule and acceptance criterion. It corrects errors and fills gaps found during review; no existing requirement was weakened. Full reasoning is in `docs/roadmap/ROADMAP_REVIEW_v2.2.md`.
+
+| ID | Type | Finding in v2.1 | Change in v2.2 |
+|---|---|---|---|
+| R01 | Error | Repository reference pointed to `Adnan-Zulfiqar/Iphone_Call_Recorder` | Corrected to `AdnanZulfiqar21/Iphone_Call_Recording` |
+| R02 | Error | Source checksum referred to a file that is not in the repository and cannot be re-verified | Kept as historical record; added the checksum of the committed v2.1 baseline |
+| R03 | Gap | Only ScreenCaptureKit (iOS 27+) was evaluated; ReplayKit Broadcast Upload Extension — the long-standing public system-wide capture path — was not assessed | Added to P01 evaluation, section 3 symbol table and risk register (section 23) |
+| R04 | Gap | No project/target inventory: Live Activity needs a widget extension; a broadcast path would need an extension and App Group | Added section 5.1 target and bundle inventory |
+| R05 | Gap | Info.plist usage-description and capability inventory not listed (microphone, Face ID, Photos add-only, Live Activities) | Added section 13.1 |
+| R06 | Gap | No jurisdiction/consent-law guidance; call-recording laws differ (one-party vs all-party consent) | Added section 13.2 legal-notice requirements (no legal advice claims) |
+| R07 | Gap | No third-party dependency, analytics or SDK policy | Added rule 26 and section 20.1 |
+| R08 | Gap | Test frameworks, snapshot tooling and fixture generation not defined | Added section 18.1 |
+| R09 | Gap | CI cost: public repositories receive free standard GitHub-hosted macOS minutes; this was not used in the plan for a Windows workstation | Added to section 20 |
+| R10 | Gap | App Store items missing: export-compliance key, privacy-policy and support URLs, age rating, name/trademark check, version/build scheme | Added to P13, P16 and section 25 |
+| R11 | Gap | No crash-diagnosis path without third-party analytics | Added on-device MetricKit/crash-diagnostic option to P07, user-shared only |
+| R12 | Gap | Storage-usage view and retention controls missing from Settings | Added to section 14.3 Settings row and P09 |
+| R13 | Gap | Section 14 defined tokens in words only; no proposed values, wireframes, copy deck or journey map | Added section 14.12 (proposed values, to be contrast-validated in P02/P10) and the reference mockup in `docs/ux/mockups/` |
+| R14 | Gap | Supported-device list for the iOS 27 baseline not defined | Added to section 3 and section 19.4 |
+| R15 | Gap | No execution-record files defined for recoverable progress | Added section 24.1 (`docs/execution/*`, `docs/reviews/*`) |
+| R16 | Consistency | Section 14.3 says Settings shows "Restore Purchases", P11 lists restore, but section 21 Free/Pro list omitted where restore and storage settings live | Clarified in section 21 |
 
 ## 1. User instruction and delivery milestones
 
@@ -90,6 +115,17 @@ Initial capture deployment baseline: **iOS 27+**, subject to the actual compiled
 
 Maintain a symbol table containing framework, symbol, SDK availability, minimum OS, background/permission requirements, fallback behaviour and source date.
 
+**Capture path candidates (v2.2).** P01 evaluates both public system-capture paths with the same requirement matrix before P03 commits to one production adapter:
+
+| Candidate | Public API | Known constraints to verify in P01 | Status before P14 |
+|---|---|---|---|
+| A — ScreenCaptureKit on iOS | SCStream / content-sharing picker / SCRecordingOutput [S1] | iOS 27+ only; picker flow; background behaviour; per-symbol iOS availability | DOCUMENTED → SDK_COMPILED |
+| B — ReplayKit Broadcast Upload Extension | RPBroadcastSampleHandler with RPSystemBroadcastPickerView [S19] | Separate extension process with a tight memory limit (historically about 50 MB — measure, do not assume); hand-off to the app through an App Group container; app-audio and microphone sample types | DOCUMENTED → SDK_COMPILED |
+
+Neither candidate is assumed to deliver remote VoIP call audio; that remains UNTESTED until P14. If both compile, A remains the preferred V1 path when it meets the matrix on iOS 27; B is either a documented fallback or explicitly rejected with reasons. Do not ship two production writers for one session (rule 2).
+
+**Supported devices.** The supported-device list is every iPhone model that can run the chosen minimum iOS version. P01 records that list from Apple's current compatibility page. Broad hardware claims still need the older/newer device evidence in section 19.4.
+
 Keep version-dependent implementation decisions behind a small capture adapter. Recheck source links and SDK headers before adopting a platform claim.
 
 ## 4. Non-negotiable engineering rules
@@ -119,6 +155,7 @@ Keep version-dependent implementation decisions behind a small capture adapter. 
 23. Permission denial, user cancellation and unsupported configuration are distinct outcomes.
 24. Basic warnings, retained recordings and recoverable media access are never paywalled.
 25. No build-stage result is labelled as physical-device validation.
+26. No third-party analytics, advertising, crash-reporting or tracking SDKs in V1. Any third-party dependency needs a recorded licence, purpose and privacy review (section 20.1).
 
 The single-writer rule concerns media encoding/writing. Bounded journal, manifest and diagnostic writes required to protect capture are still permitted and must be included in the I/O budget.
 
@@ -145,6 +182,18 @@ Supporting responsibilities:
 - UI and Live Activity projections: derive displays from authoritative state.
 
 No second component independently decides that a session has successfully started, stopped or completed.
+
+### 5.1 Targets, bundles and repository layout (v2.2)
+
+| Target | Purpose | Notes |
+|---|---|---|
+| CallCapture (app) | SwiftUI application, core modules, UI | iPhone only; minimum iOS from P01 |
+| CallCaptureCore (Swift package or framework) | SessionController, HealthVerifier, MediaWriter, RecoveryManager, RecordingStore, validator, governor | Platform-light so most logic tests run without UI |
+| CallCaptureWidgets (widget extension) | Live Activity / Dynamic Island presentation | Reads projected state only; never the authority for capture liveness |
+| CallCaptureBroadcast (upload extension) | Only if P01 selects candidate B | Shares an App Group container; bounded memory |
+| CallCaptureTests / CallCaptureUITests | Unit, property, fixture and UI automation | Synthetic adapters live here or in a debug-only target |
+
+Suggested layout: `App/`, `Packages/CallCaptureCore/`, `Extensions/`, `Tests/Fixtures/`, `docs/` (roadmap, ux, execution, reviews, platform), `scripts/`, `.github/workflows/`. Preview catalogues and fault-injection controls are compiled only into Debug/internal configurations.
 
 ## 6. Capture contracts and evidence model
 
@@ -401,6 +450,31 @@ Apply resource/protection attributes after relevant file replacements and verify
 
 Prepare PrivacyInfo.xcprivacy, applicable required-reason declarations, usage descriptions, entitlement/background-mode inventory and accurate privacy labels. Revalidate current Apple requirements at distribution time.
 
+### 13.1 Permission and capability inventory (v2.2)
+
+Request each item only when its feature is used. Copy is short, specific and states what is not done.
+
+| Key / capability | Needed for | Example purpose string (draft) |
+|---|---|---|
+| NSMicrophoneUsageDescription | Microphone audio in a recording | "CallCapture uses the microphone only while you are recording, to include your voice and nearby sound." |
+| NSFaceIDUsageDescription | Optional app lock | "Face ID unlocks your recordings when App Lock is on." |
+| NSPhotoLibraryAddUsageDescription | Optional add-only export to Photos | "Lets you save a copy of a recording to Photos. CallCapture cannot read your library." |
+| NSSupportsLiveActivities | Live Activity | Not a permission prompt; users can still disable it |
+| App Groups | Only with broadcast candidate B | Shared container for segments and state |
+| Background modes | Only those P01 proves necessary and Apple permits for the chosen path | Each mode justified in the inventory; no audio mode used merely to stay alive |
+| ITSAppUsesNonExemptEncryption = NO | Export compliance | Valid only while the app uses OS-provided encryption alone; recheck at P13 |
+
+Screen capture permission is obtained only through the genuine system picker; the app never imitates it.
+
+### 13.2 Recording-law and consent notice (v2.2)
+
+Call-recording law differs by country and region (for example one-party versus all-party consent). CallCapture does not give legal advice and does not determine whether a recording is lawful.
+
+- First launch and the setup guide include a short, plain notice: the person is responsible for informing participants and following local law.
+- The notice links to an in-app help page; it is not a blocking legal quiz and does not claim the app makes recording lawful.
+- Optional "Remind me to tell participants" toggle shows a brief pre-start reminder; default on, dismissible permanently in Settings.
+- App Store description and screenshots must not encourage covert recording (section 13, [S8]).
+
 ## 14. Professional/premium UX/UI, recording experience and accessibility
 
 ### 14.1 Design outcome and V1 commitment
@@ -453,6 +527,7 @@ Use three primary tabs: **Record**, **Recordings** and **Settings**. Keep a stab
 | Player / details | Large playback controls, elapsed/remaining time, accessible seeking, bookmarks and a labelled gap timeline | Use actual saved-media data; provide a text list for markers; any unavailable interval remains explicit |
 | Export | Native share/Files flow with concise format and destination context; preserve the master | Show preparation, cancellation, failure and completion only when known; no false proof that a third-party destination finished its work |
 | Settings / privacy / Pro | Native grouped settings for appearance, capture preferences, storage/backup, privacy, help and optional purchase | Show local price from StoreKit, Restore Purchases and a clear dismissal; core app access remains available |
+| Storage (v2.2) | Total space used by recordings, recovery material and caches, with device free space; "Clear preview cache" action; optional reminder for recordings older than a chosen age | Never auto-deletes recordings; any clean-up lists the exact items and requires confirmation; recovery material is never offered as "cache" |
 
 Library search in V1 covers local recording titles and existing metadata. Transcript search, generated summaries and cloud organization remain in section 22; they are not dependencies of this design work. Advanced organization can remain a Pro feature, but basic search, outcome visibility and owned-file access stay available.
 
@@ -583,6 +658,70 @@ Every UX check below is required at M1 to the extent stated in the **Non-device 
 
 Freeze simulator screenshot fixtures and compare meaningful layout/state changes. Review intended changes instead of treating pixel equality as proof of usability. Automated checks supplement independent visual and interaction review.
 
+### 14.12 UX/UI reference specification (v2.2)
+
+This section turns section 14.2 into proposed starting values so P02 can begin immediately. **All values are proposals:** P02 freezes them only after measuring contrast in light, dark and Increase Contrast; P10 re-measures. A reference mockup of the screens below is kept at `docs/ux/mockups/callcapture-ui-mockup.html`; it is a design illustration with sample data, not evidence of implemented behaviour.
+
+**Proposed colour tokens** (named asset colours; values are starting points to validate)
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| accent | #3B4FD8 (indigo) | #7C8CFF | Navigation, ordinary actions, links |
+| recordRed | #D92D20 | #FF5A4E | Record/Stop control and active-recording indicator only |
+| warningAmber | #B54708 (text) / #FDB022 (fill) | #FDB022 | Limited / partial / missing-section notices |
+| passGreen | #067647 | #47CD89 | Only narrowly supported passing checks (e.g. "Basic file checks passed") |
+| neutralUnknown | #667085 | #98A2B3 | Checking, Unconfirmed, Status not updated |
+| surface / grouped background | system grouped background | system grouped background | Prefer semantic system colours |
+| card | secondary system grouped background | same | Content cards, 16 pt corner radius |
+
+**Type ramp** (native text styles; never fixed sizes)
+
+| Role | Text style | Notes |
+|---|---|---|
+| Screen title | .largeTitle | Native navigation large title |
+| Recording timer | .largeTitle, monospaced digits, semibold | Scales with Dynamic Type; never shrinks below readable size |
+| Status headline | .title3 semibold | e.g. "Recording", "Saved with missing sections" |
+| Source row | .body + .subheadline secondary | Name, current observation, freshness |
+| Notice text | .callout | Wraps fully; never truncated |
+| Metadata | .footnote secondary | Dates, sizes, durations (locale formatted) |
+
+**Iconography (SF Symbols, one weight per context)**: record.circle, stop.fill, mic.fill / mic.slash, speaker.wave.2, rectangle.on.rectangle (screen), exclamationmark.triangle (limited), questionmark.circle (unknown), checkmark.seal (narrow pass), clock.arrow.circlepath (recovery), square.and.arrow.up (share), bookmark, waveform (only for real waveform data).
+
+**Screen wireframes (reference)**
+
+~~~text
+RECORD (idle)                 ACTIVE RECORDING              SAVED RESULT
+┌─────────────────────┐       ┌─────────────────────┐       ┌─────────────────────┐
+│ Record          ⚙︎   │       │ ● Recording          │       │ Saved with missing  │
+│ Scope: Full screen  │       │                      │       │ sections        ⚠︎   │
+│ + microphone   [▾]  │       │      12:48           │       │ 32:05 · 214 MB      │
+│ Setup: 3 of 4 ✓  >  │       │                      │       │ Audio missing       │
+│ Storage: ~6 h free  │       │ Screen    Capturing  │       │ 04:10–04:20         │
+│                     │       │ Mic       Detected   │       │ Basic file checks   │
+│   ┌─────────────┐   │       │ App audio Unconfirmed│       │ passed              │
+│   │ ● Start     │   │       │ ⚠︎ Earlier 10 s gap  │       │ [ ▶ Play ] [Share]  │
+│   └─────────────┘   │       │   04:10–04:20     >  │       │ Review missing      │
+│ Recent              │       │ ┌─────────────────┐  │       │ sections        >   │
+│ Team call  32:05 ⚠︎ │       │ │ ■ Stop          │  │       └─────────────────────┘
+│ Interview  18:22 ✓  │       │ └─────────────────┘  │
+├─────────────────────┤       └─────────────────────┘
+│ Record│Recordings│⚙︎ │
+└─────────────────────┘
+~~~
+
+**Key user journeys** (each must complete without coaching — UX18)
+
+1. First launch → value summary → legal/consent notice → Test My Setup → first recording.
+2. Start → system picker → Checking → Recording → Stop → Saving → Saved result → Play.
+3. Recording with a gap → persistent notice → Stop → "Saved with missing sections" → jump to gap in player.
+4. Crash/termination → next launch → "1 recording can be recovered" → Recover → recovered result with its limitations.
+5. Library → search title → open → rename → bookmark → Share/Files export.
+6. Settings → Pro → localized price → purchase or dismiss → everything previously owned still works.
+
+**Copy deck rules**: sentence case; one idea per line; state what is known, then what is not ("Microphone audio detected. App audio unconfirmed."); no "100%", "guaranteed", "perfect", "verified" or "both speakers"; time ranges in mm:ss; durations and sizes locale-formatted.
+
+**Haptics map**: Start acknowledged — light impact; Stop acknowledged — medium impact; new limitation — single warning notification (not repeated); saved — none if partial, soft success only for "Saved" with no known gaps. All optional and mirrored visually.
+
 At P16, use an initial group of at least five target users. Proposed usability target: at least four of five complete the core task sequence without coaching, and no unresolved misunderstanding of whether required audio was captured or whether Stop ended capture. Record task times, failure points and confidence in the result. This small study guides fixes; it is not a statistical claim of universal usability.
 
 ## 15. Initial measurable acceptance profile
@@ -650,7 +789,7 @@ No phase tag uses “device verified” before P14. Suggested tags: pNN-build-ac
 
 ### P01 — Platform research and native compilation
 
-**Build:** Source/availability table; actual SDK compilation of picker, stream, outputs, background declarations, stop/error callbacks and writer alternatives. Record minimum OS and all unproven runtime assumptions.
+**Build:** Source/availability table; actual SDK compilation of picker, stream, outputs, background declarations, stop/error callbacks and writer alternatives. Record minimum OS and all unproven runtime assumptions. Evaluate both capture candidates in section 3 (ScreenCaptureKit and ReplayKit Broadcast Upload Extension), record the supported-device list and write `docs/platform/capture-path-decision.md`.
 
 **Verify without iPhone:** Compile native adapters against the selected SDK; test capability mapping and unavailable-path handling. Read Apple's reference implementation without assuming it proves third-party call audio.
 
@@ -698,7 +837,7 @@ No phase tag uses “device verified” before P14. Suggested tags: pNN-build-ac
 
 ### P07 — Diagnostics and resource governance
 
-**Build:** Bounded technical ring buffer, reason codes, safe report export, resource states and operational measurements. Do not collect media content by default.
+**Build:** Bounded technical ring buffer, reason codes, safe report export, resource states and operational measurements. Do not collect media content by default. Optionally include on-device MetricKit crash/hang diagnostics in the user-exported report; nothing is sent automatically and no third-party crash SDK is used (rule 26).
 
 **Verify without iPhone:** Simulated pressure, queue-limit enforcement including pending tasks, export redaction, finite retry behaviour and budget transitions.
 
@@ -714,7 +853,7 @@ No phase tag uses “device verified” before P14. Suggested tags: pNN-build-ac
 
 ### P09 — Polished playback, searchable library and export
 
-**Build:** Complete the premium library/player/export/recovery screens, local title/metadata search, sorting and outcome filters. Add playback, real saved-media waveforms where available, accessible bookmarks/gap markers, rename, deletion, partial/recovered labels, anomaly seeking, file sharing, Files export, optional Photos add-only export and audio-only derived export. Bound preview caches and preserve navigation state.
+**Build:** Complete the premium library/player/export/recovery screens, local title/metadata search, sorting and outcome filters. Add playback, real saved-media waveforms where available, accessible bookmarks/gap markers, rename, deletion, partial/recovered labels, anomaly seeking, file sharing, Files export, optional Photos add-only export and audio-only derived export. Bound preview caches and preserve navigation state. Add the Settings storage view (section 14.3) with cache clearing and optional age reminders; no automatic deletion of recordings.
 
 **Verify without iPhone:** Fixture playback and external player checks where available, damaged-file isolation, export cancellation, cleanup and ownership after entitlement changes. Check the seeded large library, unavailable previews, long titles, keyboard interactions and normal/empty/error/recovery screenshots; complete UX12–UX14 where applicable.
 
@@ -748,7 +887,7 @@ This milestone is the user's requested point **before any physical iPhone testin
 
 ### P13 — Signing and TestFlight delivery
 
-**Build:** Complete Apple Developer/App Store Connect setup, bundle identity, profiles, protected credentials, signed archive and upload of the completed app.
+**Build:** Complete Apple Developer/App Store Connect setup, bundle identity, profiles, protected credentials, signed archive and upload of the completed app. Confirm the app name is available and does not conflict with existing marks, set the version/build scheme (semantic marketing version; monotonically increasing build number derived from CI run or commit count), export-compliance answer, age rating and TestFlight test notes.
 
 **Verify:** Archive identity, entitlements, export/upload processing and TestFlight availability. Use a distribution-supported Xcode/SDK; a successful research build does not establish distribution acceptance.
 
@@ -772,7 +911,7 @@ This milestone is the user's requested point **before any physical iPhone testin
 
 ### P16 — Beta acceptance and release
 
-**Complete:** Target-user beta and the section 14 task-comprehension study, scoped device matrix, privacy/purchase/App Review package, support documentation and release artifact retention. Use actual completed screens for store screenshots and onboarding/support guidance.
+**Complete:** Target-user beta and the section 14 task-comprehension study, scoped device matrix, privacy/purchase/App Review package (including review notes explaining the recording indicator, consent notice and how to exercise capture), public privacy-policy and support URLs, support documentation and release artifact retention. Use actual completed screens for store screenshots and onboarding/support guidance.
 
 **Verify:** Release checklist, affected-device retests after candidate changes, onboarding comprehension and retained-recording ownership.
 
@@ -826,6 +965,15 @@ For T06, detection must use actual expected coverage and instrumented losses, no
 Use invariant/property tests for state/event permutations and independent fixtures with known expected outputs. A validator must not receive its expected answer from the implementation it is verifying.
 
 Do not require every expensive suite on every edit. Run relevant tests during development and the complete required gate at phase acceptance/M1.
+
+### 18.1 Test tooling (v2.2)
+
+- Swift Testing for new unit/property tests; XCTest/XCUITest for UI automation and performance where Swift Testing does not cover it.
+- Deterministic clocks: inject a monotonic-clock protocol and a media-time source; no `sleep`-based tests.
+- Media fixtures are generated by scripts in `scripts/fixtures/` (tones, silence, all-zero buffers, timed gaps, corrupted headers/tails) with a documented expected-result file per fixture that is written independently of the implementation.
+- Snapshot/screenshot comparison uses Xcode's own UI test attachments, or a single reviewed open-source snapshot library recorded under rule 26.
+- Accessibility audits use `XCUIApplication.performAccessibilityAudit()` where available, plus manual Accessibility Inspector review.
+- StoreKit tests use a local `.storekit` configuration and `SKTestSession`.
 
 The premium UX/UI matrix is UX01–UX18 in section 14.11. Its simulator, layout, state and interaction checks complement T01–T36; neither screenshot approval nor a polished interface replaces recording-integrity tests. Hardware-specific checks remain deferred to P14.
 
@@ -899,6 +1047,8 @@ Device health heuristics may be tuned only through a versioned change record. Do
 
 Windows remains a supported development workstation. Use a macOS/Xcode build environment for Apple compilation.
 
+Because this repository is public, standard GitHub-hosted macOS runners are available without per-minute charges under GitHub's current public-repository terms (recheck before relying on it). This is the default way to compile, test and capture simulator screenshots from a Windows workstation. Trigger expensive jobs on pull requests and manual dispatch, use concurrency groups to cancel superseded runs, and keep signing jobs manual-only with protected environments. A Mac (local or rented) is still needed for interactive Xcode work such as Instruments and design review if CI artifacts are insufficient.
+
 Before M1:
 
 - Debug simulator build and relevant test execution.
@@ -920,6 +1070,13 @@ Retain commit SHA, Xcode/SDK versions, archive metadata, App Store Connect build
 
 Do not rebuild and silently substitute a different release candidate. Changes after physical validation require impact analysis and relevant retesting.
 
+### 20.1 Dependency and repository hygiene (v2.2)
+
+- Prefer Apple frameworks; each third-party package needs a recorded licence, version pin, purpose, privacy impact and update owner in `docs/dependencies.md`.
+- `.gitignore` excludes DerivedData, `*.xcuserstate`, build products, `*.p12`, `*.mobileprovision`, `.env` and local recordings/fixtures larger than the agreed size.
+- Secret scanning runs in CI; GitHub secret scanning/push protection is enabled for the public repository.
+- Generated media fixtures are produced by scripts rather than committed when they are large.
+
 ## 21. Commercial scope and user value
 
 ### Free foundation
@@ -930,6 +1087,7 @@ Do not rebuild and silently substitute a different release candidate. Changes af
 - Recovery of available user-owned media.
 - Basic anomaly information needed to understand an incomplete recording.
 - The full premium visual baseline, light/dark appearance, accessibility, basic library search and outcome filters.
+- Storage view, Restore Purchases, privacy/consent information and diagnostics report export (section 14.3).
 
 ### One-time Pro candidates
 
@@ -975,6 +1133,10 @@ On-device Foundation Models availability depends on supported device/configurati
 | Device backup differs from app cloud setting | Clear separate policy | Verify accessible behaviour without impossible guarantees |
 | Visual effects compete with capture or obscure evidence | Bound meter/cached-preview work; retain plain readable state and Stop; verify synthetic load | Profile on-device and remove/degrade optional effects before compromising capture |
 | Polished UI gives false confidence or hides a failure | Evidence-to-copy mapping, persistent gap notice and independent state review | Use real-scenario and target-user comprehension findings to correct claims and presentation |
+| ScreenCaptureKit on iOS proves unsuitable (availability, picker or background limits) | Compile and evaluate ReplayKit broadcast candidate B in P01; keep the capture adapter small | Switch adapter only with a recorded decision and rerun affected gates |
+| Broadcast extension memory limit (candidate B) | Bounded buffers; write segments from the extension; measure in synthetic load | Measure on device; reduce video quality before risking required audio |
+| Recording used unlawfully or covertly | Consent/legal notice (13.2), visible indication, no hidden mode | Review App Review feedback and support reports |
+| No Mac available for interactive work | Use free public-repo macOS CI for builds/tests/screenshots | Arrange Mac access before P13 signing if CI signing is not chosen |
 
 A developer's reported iOS 27 silent VoIP buffers are a useful negative-test motivation, not proof that every calling app fails. [S14]
 
@@ -1029,6 +1191,19 @@ Next phase:
 
 Do not edit success criteria retrospectively without a documented change reason and revalidation. No force pushes, unrelated edits or imported historical PASS claims.
 
+### 24.1 Execution records (v2.2)
+
+Keep these short, current files so work can resume after any interruption:
+
+| File | Contents |
+|---|---|
+| `docs/execution/PROGRESS.md` | Phase status table (implementation / build-test / independent review / device — four separate columns), exact commit, tests actually run |
+| `docs/execution/BLOCKERS.md` | Open blockers, what each blocks, what is needed and from whom |
+| `docs/execution/RESUME_STATE.md` | Current phase, branch, last commit, next concrete action |
+| `docs/reviews/CURSOR_REVIEW_INDEX.md` | Each review handoff, reviewed SHA, findings and disposition; `INDEPENDENT_REVIEW_PENDING` where none occurred |
+
+Self-review by the implementer is recorded as self-review and never as independent acceptance.
+
 ## 25. Release checklist
 
 - [ ] M1 application build and independent review complete.
@@ -1053,6 +1228,10 @@ Do not edit success criteria retrospectively without a documented change reason 
 - [ ] No open SEV-0/SEV-1 issue; other findings have recorded disposition.
 - [ ] Validated build selected for submission; sources and claims rechecked.
 - [ ] App Review package, support guidance and evidence retention are ready.
+- [ ] Privacy-policy and support URLs are live; age rating, export compliance and app-name check are complete.
+- [ ] Recording-law/consent notice is present and App Store copy does not encourage covert recording.
+- [ ] Every usage-description string and capability in section 13.1 is present, accurate and actually used.
+- [ ] Dependency register is current; no third-party analytics/tracking SDKs.
 
 ## 26. Improvement traceability
 
@@ -1095,6 +1274,11 @@ Do not edit success criteria retrospectively without a documented change reason 
 | Protect capture performance from optional UI work | Section 14.7; UX16; T36; P14 |
 | Make accessibility, localization readiness and usability measurable | Sections 14.8/14.11; UX02–UX05/UX08/UX14/UX18; P10/P14/P16 |
 | Keep premium presentation separate from the Pro paywall | Sections 14.1/21; UX15; P11 |
+| v2.2: Evaluate ReplayKit broadcast path alongside ScreenCaptureKit | Sections 3, 5.1, 23; P01 |
+| v2.2: Target, permission, consent-law and dependency inventories | Sections 5.1, 13.1, 13.2, 20.1; rule 26 |
+| v2.2: Concrete UX token proposal, wireframes, journeys and mockup | Section 14.12; `docs/ux/mockups/` |
+| v2.2: Test tooling, free public-repo macOS CI, execution records | Sections 18.1, 20, 24.1 |
+| v2.2: App Store submission completeness | P13, P16, section 25 |
 
 ## 27. Source register
 
@@ -1118,6 +1302,7 @@ Platform references were consulted in the two review rounds and the premium UX/U
 - **S16 — Apple touch-target and layout guidance:** [UI Design Dos and Don'ts](https://developer.apple.com/design/tips/).
 - **S17 — Apple material hierarchy and Liquid Glass guidance:** [Materials — Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/materials).
 - **S18 — Apple accessibility evaluation guidance:** [Performing accessibility testing for your app](https://developer.apple.com/documentation/accessibility/performing-accessibility-testing-for-your-app).
+- **S19 — Apple ReplayKit broadcast extension (added v2.2, recheck at P01):** [RPBroadcastSampleHandler](https://developer.apple.com/documentation/replaykit/rpbroadcastsamplehandler) and [RPSystemBroadcastPickerView](https://developer.apple.com/documentation/replaykit/rpsystembroadcastpickerview).
 
 ## 28. Immediate implementation starting point
 

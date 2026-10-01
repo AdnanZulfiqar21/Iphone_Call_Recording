@@ -1,0 +1,21 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+# Signing material and secrets — never commit
+*.p12
+*.cer
+*.mobileprovision
+*.p8
+.env
+*.env
+# Local recordings / large fixtures
+*.mov
+*.mp4
+*.m4a
+Tests/Fixtures/generated/
+# OS
+.DS_Store
+Thumbs.db
