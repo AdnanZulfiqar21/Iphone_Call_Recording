@@ -261,20 +261,30 @@ final class CallCaptureUITests: XCTestCase {
     func testAccessibilityAudit() throws {
         let app = launch(["-UITestSeedLibrary", "8", "-UITestScenario", "normal"])
         XCTAssertTrue(app.buttons["startButton"].waitForExistence(timeout: 10))
-        try app.performAccessibilityAudit(for: [.dynamicType, .elementDetection, .hitRegion, .sufficientElementDescription]) { issue in
-            // Known system-owned elements (tab bar internals) are not app-controlled.
-            issue.element?.elementType == .tabBar
-        }
+        try audit(app, "Record", [.dynamicType, .elementDetection, .hitRegion, .sufficientElementDescription])
         app.tabBars.buttons["Recordings"].tap()
         // Audit the settled screen, not a list that is still populating.
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
         sleep(1)
-        try app.performAccessibilityAudit(for: [.dynamicType, .elementDetection, .hitRegion]) { issue in
-            issue.element?.elementType == .tabBar || issue.element?.elementType == .searchField
-        }
+        try audit(app, "Recordings", [.dynamicType, .elementDetection, .hitRegion])
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
         sleep(1)
-        try app.performAccessibilityAudit(for: [.dynamicType, .elementDetection, .hitRegion])
+        try audit(app, "Settings", [.dynamicType, .elementDetection, .hitRegion])
+    }
+
+    /// Runs an audit and records every issue's details so failures are diagnosable.
+    /// Only system-owned controls (tab bar, search field) are excluded; app content never is.
+    private func audit(_ app: XCUIApplication, _ screen: String, _ types: XCUIAccessibilityAuditType) throws {
+        try app.performAccessibilityAudit(for: types) { issue in
+            let element = issue.element
+            let detail = "AUDIT[\(screen)] type=\(issue.auditType.rawValue) desc=\(issue.compactDescription) element=\(element?.elementType.rawValue ?? -1) id=\(element?.identifier ?? "") label=\(element?.label ?? "")"
+            print(detail)
+            let attachment = XCTAttachment(string: detail)
+            attachment.name = "audit-issue-\(screen)"
+            attachment.lifetime = .keepAlways
+            self.add(attachment)
+            return element?.elementType == .tabBar || element?.elementType == .searchField
+        }
     }
 }

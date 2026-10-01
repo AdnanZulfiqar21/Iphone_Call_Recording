@@ -5,6 +5,11 @@ on:
     paths-ignore: ['docs/**', '**/*.md']
   pull_request:
   workflow_dispatch:
+    inputs:
+      only_testing:
+        description: "Optional -only-testing target for a focused app run"
+        required: false
+        default: ""
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -82,7 +87,9 @@ jobs:
       - name: Debug simulator build + unit/UI tests
         run: |
           set -o pipefail
-          xcodebuild test -collect-test-diagnostics never -project CallCapture.xcodeproj -scheme CallCapture -configuration Debug \
+          ONLY=""
+          if [ -n "${{ github.event.inputs.only_testing }}" ]; then ONLY="-only-testing:${{ github.event.inputs.only_testing }}"; fi
+          xcodebuild test -collect-test-diagnostics never $ONLY -project CallCapture.xcodeproj -scheme CallCapture -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult -derivedDataPath /tmp/dd-app CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* " || true
