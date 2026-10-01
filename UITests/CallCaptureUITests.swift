@@ -278,12 +278,8 @@ final class CallCaptureUITests: XCTestCase {
     private func audit(_ app: XCUIApplication, _ screen: String, _ types: XCUIAccessibilityAuditType) throws {
         try app.performAccessibilityAudit(for: types) { issue in
             let element = issue.element
-            let detail = "AUDIT[\(screen)] type=\(issue.auditType.rawValue) desc=\(issue.compactDescription) element=\(element?.elementType.rawValue ?? -1) id=\(element?.identifier ?? "") label=\(element?.label ?? "")"
-            print(detail)
-            let attachment = XCTAttachment(string: detail)
-            attachment.name = "audit-issue-\(screen)"
-            attachment.lifetime = .keepAlways
-            self.add(attachment)
+            let type = element.map { String(describing: $0.elementType) } ?? "none"
+            print("AUDIT[\(screen)] type=\(issue.auditType.rawValue) desc=\(issue.compactDescription) element=\(type) id=\(element?.identifier ?? "") label=\(element?.label ?? "")")
             return element?.elementType == .tabBar || element?.elementType == .searchField
         }
     }
