@@ -26,12 +26,13 @@ final class CallCaptureUITests: XCTestCase {
 
     /// The Pro row sits below the fold behind the floating tab bar; scroll it into view first.
     private func openPro(_ app: XCUIApplication) {
+        app.swipeUp(); app.swipeUp()
         let row = app.descendants(matching: .any)["proRow"].firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10))
-        var tries = 0
-        while !row.isHittable && tries < 5 { app.swipeUp(); tries += 1 }
-        app.swipeUp()
         row.tap()
+        XCTAssertTrue(app.navigationBars["Pro"].waitForExistence(timeout: 10))
+        // Purchase controls sit in the last section of a lazy list; bring them on screen.
+        app.swipeUp(); app.swipeUp(); app.swipeUp()
     }
 
     private func startRecording(_ app: XCUIApplication) {
@@ -127,18 +128,21 @@ final class CallCaptureUITests: XCTestCase {
         app.tabBars.buttons["Recordings"].tap()
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 15))
         screenshot(app, "13-library")
-        app.swipeUp(); app.swipeUp(); app.swipeDown()
-        let search = app.searchFields.firstMatch
-        search.tap()
-        search.typeText("cafe")
-        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 5))
-        screenshot(app, "14-library-search")
-        search.typeText("zzzz")
-        XCTAssertTrue(app.staticTexts["No Results for “cafezzzz”"].waitForExistence(timeout: 5) || app.cells.count == 0)
-        app.buttons["Cancel"].firstMatch.tap()
-        app.buttons["filter-partial"].tap()
+        app.swipeUp(); app.swipeUp(); app.swipeDown(); app.swipeDown(); app.swipeDown()
+        let partial = app.buttons["filter-partial"]
+        XCTAssertTrue(partial.waitForExistence(timeout: 5))
+        partial.tap()
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 5))
         screenshot(app, "15-library-partial-filter")
+        app.buttons["filter-all"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("cafe")
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Café'")).firstMatch.waitForExistence(timeout: 5))
+        screenshot(app, "14-library-search")
+        search.typeText("zzzz")
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Café'")).firstMatch.waitForExistence(timeout: 2))
     }
 
     // UX11: first-use empty library has an actionable empty state.
@@ -163,7 +167,10 @@ final class CallCaptureUITests: XCTestCase {
         app.staticTexts["Microphone missing"].tap()
         app.buttons["playPauseButton"].tap()
         sleep(1)
-        app.buttons["exportButton"].tap()
+        let export = app.buttons["exportButton"]
+        var tries = 0
+        while !(export.exists && export.isHittable) && tries < 6 { app.swipeUp(); tries += 1 }
+        export.tap()
         XCTAssertTrue(app.navigationBars["Export"].waitForExistence(timeout: 5))
         screenshot(app, "18-export")
     }
