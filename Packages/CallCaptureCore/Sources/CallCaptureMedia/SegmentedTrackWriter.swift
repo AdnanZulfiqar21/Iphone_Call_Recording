@@ -31,6 +31,8 @@ public final class SegmentedTrackWriter: NSObject, MediaWriter, @unchecked Senda
     private var tracks: [TrackKey: TrackWriter] = [:]
     private var currentEpoch: [SourceKind: Int] = [:]
     private var formatKeys: [SourceKind: String] = [:]
+    private var lastAudioEnd: [SourceKind: Double] = [:]
+    private let discontinuityTolerance = 0.1
     /// Session origin in source time: PTS that maps to session time zero.
     private var origin: CMTime?
     private var finished = false
@@ -67,9 +69,15 @@ public final class SegmentedTrackWriter: NSObject, MediaWriter, @unchecked Senda
             refLock.withLock { origin = o }
         }
 
-        // Audio format change: close the epoch and start a new track part (section 10.2).
+        // Audio format change or timestamp discontinuity: close the part and start a new one
+        // (section 10.2). Each part is placed at its own session offset during assembly, so a
+        // hole stays a hole and later audio keeps its true time instead of being closed up.
         let key = SampleBufferInspector.formatKey(of: buffer)
-        if source.isAudio, let previous = formatKeys[source], previous != key {
+        let start = CMTimeGetSeconds(pts)
+        let discontinuous = source.isAudio && (lastAudioEnd[source].map { start - $0 > discontinuityTolerance } ?? false)
+        let end = start + max(0, CMTimeGetSeconds(CMSampleBufferGetDuration(buffer)).isFinite ? CMTimeGetSeconds(CMSampleBufferGetDuration(buffer)) : 0)
+        if source.isAudio { lastAudioEnd[source] = max(lastAudioEnd[source] ?? end, end) }
+        if source.isAudio, let previous = formatKeys[source], previous != key || discontinuous {
             let oldKey = TrackKey(source: source, epoch: currentEpoch[source] ?? 0)
             tracks[oldKey]?.finishAsync()
             currentEpoch[source] = (currentEpoch[source] ?? 0) + 1
