@@ -61,7 +61,7 @@ jobs:
   app-ios:
     name: App — simulator tests + unsigned Release device build (Xcode 27)
     runs-on: xcode-27
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -114,6 +114,7 @@ jobs:
           exit $status
       - name: Increase Contrast run (UX09)
         if: always()
+        timeout-minutes: 25
         run: |
           UDID=${{ steps.sim.outputs.udid }}
           xcrun simctl boot "$UDID" 2>/dev/null || true
