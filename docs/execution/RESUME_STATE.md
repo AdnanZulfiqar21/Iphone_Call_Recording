@@ -13,7 +13,7 @@
 ## How to continue
 
 1. Read `docs/execution/PROGRESS.md` for phase status and the latest CI run.
-2. Check the latest CI run: `gh run list --branch phase/p00-foundation --limit 3`.
+2. Check the latest CI run: `gh run list --branch main --limit 3`.
 3. Fix any failing job; rerun; update PROGRESS.md with actual results.
 4. Local fast loop for core logic (Windows + Docker):
    `docker run --rm -v "<repo>/Packages/CallCaptureCore:/pkg" -w /pkg swift:6.2 swift test --build-path /tmp/build`
