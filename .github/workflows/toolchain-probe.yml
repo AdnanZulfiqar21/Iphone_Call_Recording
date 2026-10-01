@@ -11,26 +11,24 @@ permissions:
   contents: read
 jobs:
   probe:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [xcode-27]
-    runs-on: ${{ matrix.os }}
+    runs-on: xcode-27
     timeout-minutes: 15
     steps:
-      - name: Report toolchain
+      - name: Collect SDK interfaces for the P01 symbol table
         run: |
-          sw_vers
-          echo "--- Installed Xcodes"; ls -d /Applications/Xcode* || true
-          echo "--- Selected"; xcodebuild -version
-          echo "--- SDKs"; xcodebuild -showsdks
-          echo "--- Simulator runtimes"; xcrun simctl list runtimes
-          echo "--- iPhone device types"; xcrun simctl list devicetypes | grep -i iphone | tail -25
-          echo "--- Tools"; which xcodegen swiftlint brew || true; swift --version
-      - name: Check ScreenCaptureKit / ReplayKit availability in iOS SDK
-        run: |
-          SDK=$(xcrun --sdk iphoneos --show-sdk-path); echo "$SDK"
-          ls "$SDK/System/Library/Frameworks" | grep -Ei 'ScreenCaptureKit|ReplayKit|ActivityKit|StoreKit' || true
-          H="$SDK/System/Library/Frameworks/ScreenCaptureKit.framework/Headers"
-          if [ -d "$H" ]; then ls "$H"; grep -h "API_AVAILABLE\|API_UNAVAILABLE" "$H"/SCStream.h | grep -i ios | head -20; grep -l SCRecordingOutput "$H"/*.h; grep -hi "picker" "$H"/*.h | head -20; grep -h "API_AVAILABLE" "$H"/*.h | grep -io "ios([0-9.]*)" | sort | uniq -c; else echo "No ScreenCaptureKit headers in iOS SDK"; fi
-          IF="$SDK/System/Library/Frameworks/ScreenCaptureKit.framework/Modules"; ls -R "$IF" 2>/dev/null | head -20 || true
+          mkdir -p out
+          { sw_vers; xcodebuild -version; xcodebuild -showsdks; xcrun simctl list runtimes; xcrun simctl list devicetypes; swift --version; } > out/toolchain.txt 2>&1
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          F=$SDK/System/Library/Frameworks
+          cp -R $F/ScreenCaptureKit.framework/Headers out/SCK-headers
+          cp $F/ScreenCaptureKit.framework/Modules/ScreenCaptureKit.swiftmodule/arm64e-apple-ios.swiftinterface out/SCK.swiftinterface
+          find $F/_ScreenCaptureKit_SwiftUI.framework -name "*.swiftinterface" | head -1 | xargs -I{} cp {} out/SCK_SwiftUI.swiftinterface || true
+          cp -R $F/ReplayKit.framework/Headers out/ReplayKit-headers
+          find $F/ActivityKit.framework -name "arm64e-apple-ios.swiftinterface" | head -1 | xargs -I{} cp {} out/ActivityKit.swiftinterface || true
+          grep -n "Info.plist\|NSScreenCapture\|UsageDescription\|UIBackgroundModes" -r out/SCK-headers out/SCK.swiftinterface | head -50 > out/plist-hints.txt || true
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-interfaces-ios27
+          path: out
+          retention-days: 7
