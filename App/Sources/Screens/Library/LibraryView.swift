@@ -175,7 +175,7 @@ struct RecoveryBanner: View {
                 HStack(alignment: .top, spacing: DS.Space.m) {
                     Image(systemName: "clock.arrow.circlepath").foregroundStyle(DS.Palette.accent).accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: DS.Space.xs) {
-                        Text("\(model.recoveredNotice.count) recording(s) recovered after CallCapture closed unexpectedly")
+                        Text("^[\(model.recoveredNotice.count) recording](inflect: true) recovered after CallCapture closed unexpectedly")
                             .font(.callout.weight(.semibold))
                         Text("Recording didn't continue after the app closed. The end of each recovered recording may be missing.")
                             .font(.footnote).foregroundStyle(.secondary)

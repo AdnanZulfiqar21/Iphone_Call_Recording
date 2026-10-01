@@ -151,7 +151,7 @@ final class CallCaptureUITests: XCTestCase {
         app.tabBars.buttons["Recordings"].tap()
         let banner = app.descendants(matching: .any)["recoveryBanner"].firstMatch
         XCTAssertTrue(banner.waitForExistence(timeout: 60))
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'recovered'")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "recovered after")).firstMatch.exists)
         let row = app.descendants(matching: .any).matching(identifier: "libraryRow").firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH 'Recovered'")).firstMatch.exists)
