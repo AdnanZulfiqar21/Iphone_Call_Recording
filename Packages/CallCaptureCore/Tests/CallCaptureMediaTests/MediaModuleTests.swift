@@ -29,7 +29,7 @@ private func write(_ writer: SegmentedTrackWriter, _ observations: [SampleObserv
         let sample = CapturedSample(observation: o, payload: SyntheticMediaFactory.payload(for: o))
         let session = MediaRange(startSeconds: o.range.start.seconds - origin, endSeconds: o.range.end.seconds - origin)
         var attempts = 0
-        while writer.append(sample, sessionTime: session) == .notReady && attempts < 500 {
+        while writer.append(sample, sessionTime: session) == .notReady && attempts < 100 {
             attempts += 1
             try? await Task.sleep(nanoseconds: 2_000_000)
         }
@@ -104,7 +104,7 @@ struct MediaPipelineTests {
 
         let url = recordingDir.appendingPathComponent(media.masterFileName)
         var full = media.validation
-        while full.coverage != .full {
+        for _ in 0..<50 where full.coverage != .full {
             full = try await RecordingValidator.full(url: url, sources: media.tracks, previous: full, chunkSeconds: 3)
         }
         #expect(full.result == .fullChecksPassed)
@@ -125,7 +125,7 @@ struct MediaPipelineTests {
         try FileManager.default.createDirectory(at: recordingDir, withIntermediateDirectories: true)
         let media = try await MediaAssembler().assemble(recoveryDirectory: recovery, manifest: manifest, into: recordingDir)
         var full = media.validation
-        while full.coverage != .full {
+        for _ in 0..<50 where full.coverage != .full {
             full = try await RecordingValidator.full(url: recordingDir.appendingPathComponent(media.masterFileName),
                                                      sources: media.tracks, previous: full, chunkSeconds: 4)
         }
@@ -205,13 +205,18 @@ struct MediaPipelineTests {
                                        store: store, profile: profile, freeBytes: { 50_000_000_000 })
         let controller = SessionController(dependencies: deps)
         await controller.record(contract: contract, title: "E2E")
-        for _ in 0..<200 where await controller.snapshot().lifecycle != .starting { try await Task.sleep(nanoseconds: 10_000_000) }
+        for _ in 0..<200 {
+            if await controller.snapshot().lifecycle == .starting { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
         for o in observations(seconds: 5, origin: 1_000) {
             engine.deliver(o.source, start: o.range.start.seconds, duration: o.range.duration, audio: o.audio, frame: o.frame)
         }
         try await Task.sleep(nanoseconds: 300_000_000)
         await controller.stop()
-        for _ in 0..<1_000 where !(await [.finalized, .failed].contains(controller.snapshot().lifecycle)) {
+        for _ in 0..<1_500 {
+            let l = await controller.snapshot().lifecycle
+            if l == .finalized || l == .failed { break }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
         let s = await controller.snapshot()

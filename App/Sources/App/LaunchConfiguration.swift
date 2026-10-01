@@ -66,6 +66,7 @@ struct LaunchConfiguration {
     }
 
     /// Seeds metadata-only rows (UX12) and/or one real media recording with a known gap (UX13).
+    @MainActor
     func seed(into store: RecordingStore, layout: FileLayout) async {
         if seedLibraryCount > 0 {
             let contract = CaptureContract.standard(mode: .screenAndAudio)

@@ -40,18 +40,25 @@ final class LiveActivityController {
 
         if phase == .ended {
             let content = ActivityContent(state: state, staleDate: nil)
-            let current = activity
+            let current = activity.map(ActivityRef.init)
             activity = nil
             lastState = nil
-            Task { await current?.end(content, dismissalPolicy: .after(Date().addingTimeInterval(60))) }
+            Task { await current?.activity.end(content, dismissalPolicy: .after(Date().addingTimeInterval(60))) }
             return
         }
         let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(Self.staleAfter))
         if let activity {
-            Task { await activity.update(content) }
+            let ref = ActivityRef(activity: activity)
+            Task { await ref.activity.update(content) }
         } else if isEnabledBySystem {
             activity = try? Activity.request(attributes: RecordingActivityAttributes(title: String(localized: "CallCapture")),
                                              content: content, pushType: nil)
         }
     }
+}
+
+/// ActivityKit's Activity is safe to message from any task; this wrapper states that to the
+/// region-isolation checker without widening the controller's own isolation.
+private struct ActivityRef: @unchecked Sendable {
+    let activity: Activity<RecordingActivityAttributes>
 }

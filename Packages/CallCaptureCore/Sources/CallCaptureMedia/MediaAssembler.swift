@@ -129,9 +129,26 @@ public enum RecordingValidator {
         var report = previous
         let asset = AVURLAsset(url: url)
         let tracks = try await asset.load(.tracks)
-        let duration = try await asset.load(.duration).seconds
+        var duration = try await asset.load(.duration).seconds
+        if !duration.isFinite || duration <= 0 {
+            // Fall back to the longest track if the container duration is unavailable.
+            var longest = 0.0
+            for t in tracks { longest = max(longest, CMTimeRangeGetEnd(try await t.load(.timeRange)).seconds) }
+            duration = longest
+        }
         let from = report.decodedThrough
         let to = min(duration, from + chunkSeconds)
+        guard duration.isFinite, to > from else {
+            // Nothing left to decode (or no usable timeline): finish rather than loop forever.
+            report.coverage = .full
+            if !(duration.isFinite && duration > 0) {
+                report.result = .failed
+                report.notes.append("noTimeline")
+            } else if report.result != .failed {
+                report.result = .fullChecksPassed
+            }
+            return report
+        }
         for (index, track) in tracks.enumerated() where index < sources.count {
             let reader = try AVAssetReader(asset: asset)
             let output = AVAssetReaderTrackOutput(track: track, outputSettings: track.mediaType == .video
