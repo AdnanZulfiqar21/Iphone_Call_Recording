@@ -93,6 +93,9 @@ jobs:
           trap 'rm -f "$KEY"' EXIT   # the key never outlives this step, even on failure
           python3 scripts/write_asc_key.py "$KEY"
           openssl pkey -in "$KEY" -noout 2>/dev/null || { echo "::error::ASC_KEY_P8 decodes but is not a valid private key; re-download or regenerate the API key"; exit 1; }
+          # A fresh runner has no profile folders; Xcode downloads new profiles but cannot save them
+          # there, then fails with "Build input file cannot be found: …mobileprovision".
+          mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" "$HOME/Library/MobileDevice/Provisioning Profiles"
           AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
           xcodebuild archive -project CallCapture.xcodeproj -scheme CallCapture -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/CallCapture.xcarchive" \
