@@ -17,8 +17,10 @@ Requirement: the iPhone must run **iOS 27** (deployment target; ScreenCaptureKit
 2. **Team ID.** developer.apple.com → Account → Membership details → Team ID (10 characters).
 3. **App record.** App Store Connect → Apps → **+ New App**: platform iOS, name *CallCapture*
    (or the final name), bundle ID `com.adnanzulfiqar.callcapture`, SKU of your choice.
-   If the bundle ID is not listed yet, run the workflow once (step 5) — automatic signing
-   registers it — then create the app record and run again.
+   If the bundle ID is not listed yet, run the workflow once (step 5): `scripts/asc_setup.py`
+   registers the explicit app and widget bundle IDs with the API key (automatic signing alone
+   only creates a wildcard ID), and tries to create the app record. If Apple refuses that
+   through the API, the run says so; create the record here and run again.
    If you want a different final bundle ID (BLOCKERS B01), say so before the first upload;
    it changes `project.yml` for the app and the `.widgets` extension.
 4. **GitHub secrets.** Repository → Settings → Environments → **New environment** `Call Recording Application`
