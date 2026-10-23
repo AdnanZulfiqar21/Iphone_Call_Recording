@@ -14,6 +14,12 @@ final class LiveActivityController {
 
     private(set) var isEnabledBySystem = ActivityAuthorizationInfo().areActivitiesEnabled
 
+    init() {
+        // An activity left by an earlier run (terminated app, crash) must not keep claiming a recording.
+        let orphans = Activity<RecordingActivityAttributes>.activities.map(ActivityRef.init)
+        Task { for ref in orphans { await ref.activity.end(nil, dismissalPolicy: .immediate) } }
+    }
+
     func update(with snapshot: SessionSnapshot) {
         let phase: RecordingActivityAttributes.ContentState.Phase? = switch snapshot.lifecycle {
         case .starting: .starting
@@ -23,7 +29,12 @@ final class LiveActivityController {
         case .finalized, .failed, .cancelled: .ended
         case .idle, .preparing, .awaitingUserSelection: nil
         }
-        guard let phase else { return }
+        // Snapshots are delivered newest-only, so the final phase can be skipped on the way back to
+        // idle. Any non-active state with an activity still open ends it (device test 1).
+        guard let phase else {
+            if activity != nil { endActivity(state: lastState) }
+            return
+        }
         let state = RecordingActivityAttributes.ContentState(
             phase: phase,
             headline: StatusCopy.text(snapshot.headline.message),
@@ -39,11 +50,7 @@ final class LiveActivityController {
         isEnabledBySystem = ActivityAuthorizationInfo().areActivitiesEnabled
 
         if phase == .ended {
-            let content = ActivityContent(state: state, staleDate: nil)
-            let current = activity.map(ActivityRef.init)
-            activity = nil
-            lastState = nil
-            Task { await current?.activity.end(content, dismissalPolicy: .after(Date().addingTimeInterval(60))) }
+            endActivity(state: state)
             return
         }
         let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(Self.staleAfter))
@@ -54,6 +61,22 @@ final class LiveActivityController {
             activity = try? Activity.request(attributes: RecordingActivityAttributes(title: String(localized: "CallCapture")),
                                              content: content, pushType: nil)
         }
+    }
+}
+
+extension LiveActivityController {
+    /// Ends the activity at once: after Stop, a lingering "Recording" presentation reads as still
+    /// recording. The saved result is shown in the app.
+    fileprivate func endActivity(state: RecordingActivityAttributes.ContentState?) {
+        let current = activity.map(ActivityRef.init)
+        activity = nil
+        lastState = nil
+        let content = state.map { s -> ActivityContent<RecordingActivityAttributes.ContentState> in
+            var ended = s
+            ended.phase = .ended
+            return ActivityContent(state: ended, staleDate: nil)
+        }
+        Task { await current?.activity.end(content, dismissalPolicy: .immediate) }
     }
 }
 

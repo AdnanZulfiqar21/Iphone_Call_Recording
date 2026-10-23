@@ -16,6 +16,7 @@ struct LaunchConfiguration {
     #if DEBUG
     var scenario: String?
     var picker: String?
+    var scope: CaptureScope?
     var seedLibraryCount = 0
     var seedMediaRecording = false
     var seedInterruptedRecording = false
@@ -40,6 +41,7 @@ struct LaunchConfiguration {
         c.skipOnboarding = !args.contains("-UITestShowOnboarding")
         c.scenario = value("-UITestScenario")
         c.picker = value("-UITestPicker")
+        c.scope = value("-UITestScope").flatMap(CaptureScope.init(rawValue:))
         c.seedLibraryCount = Int(value("-UITestSeedLibrary") ?? "") ?? 0
         c.seedMediaRecording = args.contains("-UITestSeedMedia")
         c.seedInterruptedRecording = args.contains("-UITestSeedInterrupted")
@@ -66,6 +68,7 @@ struct LaunchConfiguration {
         }
         let engine = SyntheticCaptureEngine(pickerResponse: response, scenario: SyntheticScenario.named(scenario ?? "normal"))
         engine.payloadFactory = SyntheticMediaFactory.payload(for:)
+        if let scope { engine.scope = scope }
         return engine
     }
 

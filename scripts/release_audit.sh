@@ -17,6 +17,8 @@ done
 for key in NSMicrophoneUsageDescription NSFaceIDUsageDescription NSPhotoLibraryAddUsageDescription NSSupportsLiveActivities ITSAppUsesNonExemptEncryption; do
   if plist "$key" "$PLIST" >/dev/null; then pass "Info.plist has $key"; else bad "Info.plist missing $key"; fi
 done
+FAMILY=$(plist UIDeviceFamily "$PLIST" | tr -d ' {}' | grep -v '^Array' | grep -v '^$' | tr '\n' ',')
+if [ "$FAMILY" = "1," ]; then pass "iPhone only (UIDeviceFamily 1)"; else bad "UIDeviceFamily is '$FAMILY', expected iPhone only"; fi
 MODES=$(plist UIBackgroundModes "$PLIST" | tr -d ' {}' | grep -v '^Array' | grep -v '^$' | sort | tr '\n' ',')
 if [ "$MODES" = "audio,screen-capture," ]; then pass "background modes exactly audio,screen-capture"; else bad "background modes: $MODES"; fi
 if [ -f "$APP/PrivacyInfo.xcprivacy" ]; then pass "PrivacyInfo.xcprivacy bundled"; else bad "PrivacyInfo.xcprivacy missing"; fi

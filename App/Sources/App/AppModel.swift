@@ -2,6 +2,7 @@ import UIKit
 import SwiftUI
 import CallCaptureCore
 import CallCaptureMedia
+import AVFAudio
 
 /// Composition root and UI projection of authoritative state. Views read this model;
 /// only SessionController decides lifecycle and outcomes.
@@ -129,7 +130,29 @@ final class AppModel {
         pendingStartAfterReminder = false
         let title = Date().formatted(.dateTime.day().month(.abbreviated).hour().minute())
         let contract = settings.contract
-        Task { await controller.record(contract: contract, title: String(localized: "Recording \(title)")) }
+        let askMicrophone = contract.policy(for: .microphone) != nil && usesSystemCapture
+        Task {
+            // The picker's microphone switch has no effect until the app has microphone permission;
+            // device test 1 recorded no microphone because it was never asked (setup step skipped).
+            if askMicrophone, AVAudioApplication.shared.recordPermission == .undetermined {
+                _ = await AVAudioApplication.requestRecordPermission()
+            }
+            await controller.record(contract: contract, title: String(localized: "Recording \(title)"))
+        }
+    }
+
+    /// False only for the DEBUG synthetic engine used by simulator UI tests (no permission prompts).
+    private var usesSystemCapture: Bool {
+        #if DEBUG
+        return launchConfiguration.scenario == nil && launchConfiguration.picker == nil
+        #else
+        return true
+        #endif
+    }
+
+    /// Microphone permission was refused in Settings: the picker's switch can't turn it on.
+    var microphonePermissionDenied: Bool {
+        usesSystemCapture && AVAudioApplication.shared.recordPermission == .denied
     }
 
     func stop() {

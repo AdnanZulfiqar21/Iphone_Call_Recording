@@ -76,7 +76,13 @@ public final class SegmentedTrackWriter: NSObject, MediaWriter, @unchecked Senda
         let start = CMTimeGetSeconds(pts)
         let discontinuous = source.isAudio && (lastAudioEnd[source].map { start - $0 > discontinuityTolerance } ?? false)
         let end = start + max(0, CMTimeGetSeconds(CMSampleBufferGetDuration(buffer)).isFinite ? CMTimeGetSeconds(CMSampleBufferGetDuration(buffer)) : 0)
+        let previousEnd = lastAudioEnd[source]
         if source.isAudio { lastAudioEnd[source] = max(lastAudioEnd[source] ?? end, end) }
+        // A rejected sample is a hole: the next accepted sample must see the discontinuity.
+        func rejected(_ result: WriterAppendResult) -> WriterAppendResult {
+            if source.isAudio { lastAudioEnd[source] = previousEnd }
+            return result
+        }
         if source.isAudio, let previous = formatKeys[source], previous != key || discontinuous {
             let oldKey = TrackKey(source: source, epoch: currentEpoch[source] ?? 0)
             tracks[oldKey]?.finishAsync()
@@ -94,10 +100,12 @@ public final class SegmentedTrackWriter: NSObject, MediaWriter, @unchecked Senda
                 tracks[trackKey] = track
             } catch {
                 refLock.withLock { lastError = String(describing: error) }
-                return .rejected(.writerRejected)
+                return rejected(.rejected(.writerRejected))
             }
         }
-        return track.append(buffer)
+        let result = track.append(buffer)
+        if case .rejected = result { return rejected(result) }
+        return result
     }
 
     private func makeTrack(_ key: TrackKey, first: CMSampleBuffer) throws -> TrackWriter {

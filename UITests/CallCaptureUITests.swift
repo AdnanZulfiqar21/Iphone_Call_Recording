@@ -1,4 +1,5 @@
 import XCTest
+import Vision
 
 /// Simulator UI flows with explicitly simulated capture (DEBUG launch arguments). Results are
 /// SIMULATOR_TESTED only: they say nothing about real call audio or device behaviour.
@@ -247,6 +248,18 @@ final class CallCaptureUITests: XCTestCase {
         XCTAssertTrue(app.buttons["newRecordingButton"].waitForExistence(timeout: 60))
     }
 
+    // Device test 1: sharing only one app (CallCapture) can't record another app's call; say so.
+    func testSingleAppShareIsExplained() {
+        let app = launch(["-UITestScenario", "normal", "-UITestScope", "singleApp"])
+        startRecording(app)
+        XCTAssertTrue(app.buttons["stopButton"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.descendants(matching: .any)["singleAppNotice"].waitForExistence(timeout: 10))
+        screenshot(app, "29-single-app-share")
+        app.buttons["stopButton"].tap()
+        XCTAssertTrue(app.buttons["newRecordingButton"].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.buttons["saveToPhotosButton"].exists, "result screen offers Save to Photos")
+    }
+
     // UX14: right-to-left layout readiness with a pseudo-RTL launch.
     func testRightToLeftLayout() {
         let app = launch(["-UITestSeedLibrary", "6", "-AppleTextDirection", "YES", "-NSForceRightToLeftWritingDirection", "YES"])
@@ -259,13 +272,20 @@ final class CallCaptureUITests: XCTestCase {
 
     // UX08: automated accessibility audit of primary screens.
     func testAccessibilityAudit() throws {
-        let app = launch(["-UITestSeedLibrary", "8", "-UITestScenario", "normal"])
+        // Five rows fit above the floating tab bar. With more, a row partly behind the tab bar shows a
+        // clipped slice of its title (OCR read "Supr"), which element detection cannot match to the
+        // row's element and reports intermittently (F-UX08-01). Long libraries are covered by
+        // testLargeLibrarySearchFilter.
+        let app = launch(["-UITestSeedLibrary", "5", "-UITestScenario", "normal"])
         XCTAssertTrue(app.buttons["startButton"].waitForExistence(timeout: 10))
         try audit(app, "Record", [.dynamicType, .elementDetection, .hitRegion, .sufficientElementDescription])
         app.tabBars.buttons["Recordings"].tap()
         // Audit the settled screen, not a list that is still populating.
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
         sleep(1)
+        let lastRow = app.cells.allElementsBoundByIndex.last?.frame ?? .zero
+        XCTAssertLessThanOrEqual(lastRow.maxY, app.tabBars.firstMatch.frame.minY,
+                                 "audit premise: no row is partly hidden behind the tab bar")
         try audit(app, "Recordings", [.dynamicType, .elementDetection, .hitRegion])
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
@@ -275,12 +295,43 @@ final class CallCaptureUITests: XCTestCase {
 
     /// Runs an audit and records every issue's details so failures are diagnosable.
     /// Only system-owned controls (tab bar, search field) are excluded; app content never is.
+    /// The handler captures nothing but `screen` (it is sent across isolation regions).
     private func audit(_ app: XCUIApplication, _ screen: String, _ types: XCUIAccessibilityAuditType) throws {
+        // Tests stop at the first failure, so evidence is recorded before the audit, not after it.
+        recordScreenText(app, screen)
         try app.performAccessibilityAudit(for: types) { issue in
             let element = issue.element
             let type = element.map { String(describing: $0.elementType) } ?? "none"
             print("AUDIT[\(screen)] type=\(issue.auditType.rawValue) desc=\(issue.compactDescription) element=\(type) id=\(element?.identifier ?? "") label=\(element?.label ?? "")")
+            print("AUDIT[\(screen)] detail=\(issue.detailedDescription)")
             return element?.elementType == .tabBar || element?.elementType == .searchField
+        }
+    }
+
+    /// Element detection compares text read from the screen with accessibility elements. Record both
+    /// sides — text recognised in a screenshot (Vision OCR) and every static text element's frame —
+    /// so text that matches no element can be named from the log (F-UX08-01).
+    private func recordScreenText(_ app: XCUIApplication, _ screen: String) {
+        let shot = app.screenshot()
+        let window = app.windows.firstMatch.frame
+        print("AUDIT[\(screen)] window=\(window)")
+        for text in app.staticTexts.allElementsBoundByIndex.prefix(60) where text.exists {
+            print("AUDIT[\(screen)] element frame=\(text.frame) label=\(text.label.prefix(60))")
+        }
+        for button in app.buttons.allElementsBoundByIndex.prefix(40) where button.exists {
+            print("AUDIT[\(screen)] button frame=\(button.frame) label=\(button.label.prefix(60))")
+        }
+        guard let image = shot.image.cgImage else { return }
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        try? VNImageRequestHandler(cgImage: image).perform([request])
+        for observation in request.results ?? [] {
+            guard let text = observation.topCandidates(1).first?.string else { continue }
+            // Vision boxes are normalised with a bottom-left origin; convert to window points.
+            let b = observation.boundingBox
+            let frame = CGRect(x: b.minX * window.width, y: (1 - b.maxY) * window.height,
+                               width: b.width * window.width, height: b.height * window.height).integral
+            print("AUDIT[\(screen)] ocr frame=\(frame) text=\(text.prefix(60))")
         }
     }
 }

@@ -66,7 +66,7 @@ jobs:
   app-ios:
     name: App — simulator tests + unsigned Release device build (Xcode 27)
     runs-on: xcode-27
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -92,7 +92,7 @@ jobs:
           xcodebuild test -collect-test-diagnostics never $ONLY -project CallCapture.xcodeproj -scheme CallCapture -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult -derivedDataPath /tmp/dd-app CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* " || true
+            2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* |AUDIT\[|\[media-test\]" || true
           grep -q "TEST SUCCEEDED" app-test.log
       - name: Smallest and largest screen layout runs (UX02)
         if: always()
@@ -121,7 +121,8 @@ jobs:
           exit $status
       - name: Increase Contrast run (UX09)
         if: always()
-        timeout-minutes: 25
+        # Boots a fresh simulator; 25 minutes timed out once and passed at 24:53 once on slow runners.
+        timeout-minutes: 40
         run: |
           UDID=${{ steps.sim.outputs.udid }}
           xcrun simctl boot "$UDID" 2>/dev/null || true
@@ -132,8 +133,19 @@ jobs:
           grep -E "Test Case .* (passed|failed)|TEST (EXECUTE )?(SUCCEEDED|FAILED)" contrast.log
           mkdir -p screenshots-contrast && xcrun xcresulttool export attachments --path Contrast.xcresult --output-path screenshots-contrast || true
           grep -Eq "TEST (EXECUTE )?SUCCEEDED" contrast.log
+      - name: Free simulator resources before the Release build
+        if: always()
+        run: |
+          # Two runs were lost during the Release build after three rounds of simulator tests.
+          # Shut every simulator down and drop Debug products no later step uses; log what is left.
+          xcrun simctl shutdown all || true
+          rm -rf /tmp/dd-app/Build/Intermediates.noindex || true
+          df -h / | tail -1
+          memory_pressure | tail -1 || true
       - name: Unsigned Release build for iOS devices
         if: always()
+        # A hang fails this step but lets the job finish, so its log (tests, audit evidence) is kept.
+        timeout-minutes: 30
         run: |
           set -o pipefail
           xcodebuild build -project CallCapture.xcodeproj -scheme CallCapture -configuration Release \
@@ -142,6 +154,7 @@ jobs:
           grep -q "BUILD SUCCEEDED" release-build.log
       - name: Release audit (no test doubles, plist, privacy manifest)
         if: always()
+        shell: bash   # -eo pipefail: an audit failure must not be hidden by tee
         run: bash scripts/release_audit.sh /tmp/dd-release/Build/Products/Release-iphoneos/CallCapture.app | tee release-audit.log
       - name: Export screenshots from test results
         if: always()

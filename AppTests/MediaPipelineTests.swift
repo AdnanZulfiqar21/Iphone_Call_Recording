@@ -23,6 +23,21 @@ private func log(_ s: String) {
     FileHandle.standardError.write(Data(("[media-test] " + s + "\n").utf8))
 }
 
+/// Retries a not-ready append like the pipeline does (it requeues the sample at the front).
+/// Bounded at about 10 s per sample so a stalled writer fails the test instead of hanging it;
+/// a sample given up on here is a hole the test itself made, so callers count it.
+private func appendHonouringBackpressure(_ writer: SegmentedTrackWriter, _ sample: CapturedSample,
+                                         sessionTime: MediaRange) async -> WriterAppendResult {
+    var result = writer.append(sample, sessionTime: sessionTime)
+    var attempts = 0
+    while result == .notReady && attempts < 5_000 {
+        attempts += 1
+        try? await Task.sleep(nanoseconds: 2_000_000)
+        result = writer.append(sample, sessionTime: sessionTime)
+    }
+    return result
+}
+
 /// Feeds real buffers into the production writer, honouring backpressure like the pipeline does.
 /// Returns counts so a stalled writer fails the test instead of hanging it.
 @discardableResult
@@ -31,13 +46,7 @@ private func write(_ writer: SegmentedTrackWriter, _ observations: [SampleObserv
     for (i, o) in observations.enumerated() {
         let sample = CapturedSample(observation: o, payload: SyntheticMediaFactory.payload(for: o))
         let session = MediaRange(startSeconds: o.range.start.seconds - origin, endSeconds: o.range.end.seconds - origin)
-        var attempts = 0
-        var result = writer.append(sample, sessionTime: session)
-        while result == .notReady && attempts < 100 {
-            attempts += 1
-            try? await Task.sleep(nanoseconds: 2_000_000)
-            result = writer.append(sample, sessionTime: session)
-        }
+        let result = await appendHonouringBackpressure(writer, sample, sessionTime: session)
         if result == .accepted { accepted += 1 } else {
             other += 1
             if other <= 3 || other % 200 == 0 { log("sample \(i) \(o.source.rawValue) -> \(result) \(writer.diagnosticSummary)") }
@@ -158,28 +167,34 @@ struct MediaPipelineTests {
         try writer.open(identity: SessionIdentity(sessionID: UUID(), generation: 1, contractVersion: 1), contract: contract,
                         recoveryDirectory: recovery) { _ in }
         var t = 0.0
+        var notAccepted = 0
         while t < 6 {
             let rate = t < 3 ? 48_000.0 : 44_100.0
             if let b = SyntheticMediaFactory.audioBuffer(pts: 100 + t, duration: 0.02, frequency: 440, amplitude: 0.3, sampleRate: rate) {
                 let o = SampleObservation(source: .microphone, range: MediaRange(startSeconds: 100 + t, endSeconds: 100 + t + 0.02),
                                           audio: .speech(), byteCount: 1)
-                var tries = 0
-                while writer.append(CapturedSample(observation: o, payload: SampleBufferPayload(b)),
-                                    sessionTime: MediaRange(startSeconds: t, endSeconds: t + 0.02)) == .notReady && tries < 500 {
-                    tries += 1
-                    try? await Task.sleep(nanoseconds: 2_000_000)
+                let result = await appendHonouringBackpressure(writer, CapturedSample(observation: o, payload: SampleBufferPayload(b)),
+                                                               sessionTime: MediaRange(startSeconds: t, endSeconds: t + 0.02))
+                if result != .accepted {
+                    notAccepted += 1
+                    if notAccepted <= 3 { log("T16 sample at \(t) -> \(result) \(writer.diagnosticSummary)") }
                 }
+            } else {
+                notAccepted += 1
             }
             t += 0.02
         }
-        _ = await writer.finish()
+        let report = await writer.finish()
+        #expect(notAccepted == 0, "samples not accepted: \(notAccepted); \(writer.diagnosticSummary)")
+        #expect(report.error == nil)
         let manifest = try RecoveryFiles(directory: recovery).readManifest()
-        #expect(Set(manifest.tracks.map { $0.epoch ?? 0 }) == [0, 1])
+        let parts = manifest.segments.map { "e\($0.epoch ?? 0)[\($0.sessionRange.start.seconds)-\($0.sessionRange.end.seconds)]" }
+        #expect(Set(manifest.tracks.map { $0.epoch ?? 0 }) == [0, 1], "segments: \(parts)")
         let recordingDir = root.appendingPathComponent("recording")
         try FileManager.default.createDirectory(at: recordingDir, withIntermediateDirectories: true)
         let media = try await MediaAssembler().assemble(recoveryDirectory: recovery, manifest: manifest, into: recordingDir)
-        #expect(media.validation.result == .basicChecksPassed)
-        #expect(abs(media.duration - 6) < 0.6)
+        #expect(media.validation.result == .basicChecksPassed, "\(media.validation.notes)")
+        #expect(abs(media.duration - 6) < 0.6, "duration \(media.duration); segments: \(parts)")
     }
 
     @Test("T24 recovery from committed segments after an abandoned writer")

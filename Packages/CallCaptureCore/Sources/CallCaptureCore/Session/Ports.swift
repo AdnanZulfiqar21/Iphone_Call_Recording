@@ -10,6 +10,14 @@ public enum CaptureEngineEvent: Sendable {
     case formatChanged(SourceKind)
     case stopped(ReasonCode?)
     case mediaServicesReset
+    /// What the person chose to share in the system picker (reported at selection and on change).
+    case scopeChanged(CaptureScope)
+}
+
+/// The sharing scope chosen in the system picker. Only `entireScreen` can include another app's
+/// call; `singleApp` shares one app (often CallCapture itself), so other apps' audio never arrives.
+public enum CaptureScope: String, Sendable, Codable {
+    case entireScreen, singleApp, unknown
 }
 
 public typealias CaptureEventSink = @Sendable (_ generation: Int, _ event: CaptureEngineEvent) -> Void

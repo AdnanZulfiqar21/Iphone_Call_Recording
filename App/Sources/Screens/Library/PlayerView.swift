@@ -115,6 +115,9 @@ struct PlayerView: View {
                     .frame(minHeight: DS.Size.minimumTarget)
                     .disabled(model.masterURL(m.id) == nil)
                     .accessibilityIdentifier("exportButton")
+                if m.contract.mode != .audioOnly, !model.isSessionActive, let url = model.masterURL(m.id) {
+                    SaveToPhotosButton(url: url)
+                }
                 Button { renameText = m.title; renaming = true } label: { Label("Rename", systemImage: "pencil") }
                     .frame(minHeight: DS.Size.minimumTarget)
                 Button(role: .destructive) { confirmDelete = true } label: { Label("Delete recording", systemImage: "trash") }

@@ -50,6 +50,9 @@ Declared failure model: app-process termination after a committed checkpoint lea
 | ScreenCaptureKit | `SCStream`, `addStreamOutput(_:type:sampleHandlerQueue:)`, `startCapture`, `stopCapture` | iOS 27.0 | `UIBackgroundModes: screen-capture` (else `SCStreamErrorMissingBackgroundMode`) | — |
 | ScreenCaptureKit | `SCStreamOutputType.audio` / `.microphone` | iOS 27.0 | `capturesAudio`; mic needs `audio` background mode + `AVAudioSession(.playAndRecord)` for background delivery (Apple sample) | Source shown as unconfirmed/unavailable |
 | ScreenCaptureKit | `SCStreamConfiguration.minimumFrameInterval`, `pixelFormat` | **unavailable on iOS** | Frame-rate control not available | Writer scales/encodes what is delivered |
+| ScreenCaptureKit | `SCStreamConfiguration.captureMicrophone`, `microphoneCaptureDeviceID` | **unavailable on iOS** (iOS 27.1 SDK headers, 23 Oct 2026) | Microphone comes only from the picker switch (`isMicrophoneEnabled`) plus app microphone permission | — |
+| ScreenCaptureKit | `SCContentSharingPickerConfiguration.allowedPickerModes`, `excludedBundleIDs` | **unavailable on iOS** | The app cannot force "Share Entire Screen" | Guidance before the picker; warning during capture |
+| ScreenCaptureKit | `SCContentFilter.style` (`.display` / `.window`; `.application` constant unavailable on iOS) | iOS 27.0 | Detects a single-app selection, which cannot include another app's call audio | Reported as `CaptureScope` |
 | ScreenCaptureKit | `SCRecordingOutput` | iOS 27.0 | Development comparison only | — |
 | AVFoundation | `AVAssetWriter` delegate segment output | iOS 14+ | Production writer | — |
 | AVFAudio | `mediaServicesWereResetNotification`, `routeChangeNotification` | iOS 6+ | T22 / T16 handling | — |

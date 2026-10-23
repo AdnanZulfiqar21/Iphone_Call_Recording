@@ -21,6 +21,8 @@ public final class ScreenCaptureKitEngine: NSObject, CaptureEngine, SCContentSha
     private var formatKeys: [SourceKind: String] = [:]
     private var epochs: [SourceKind: Int] = [:]
     private var stopRequested = false
+    private var microphoneOutputAdded = false
+    private var audioSessionActive = false
     private var observing = false
     private let videoQueue = DispatchQueue(label: "callcapture.capture.video", qos: .userInitiated)
     private let audioQueue = DispatchQueue(label: "callcapture.capture.audio", qos: .userInitiated)
@@ -43,6 +45,7 @@ public final class ScreenCaptureKitEngine: NSObject, CaptureEngine, SCContentSha
             self.stopRequested = false
             self.formatKeys = [:]
             self.epochs = [:]
+            self.microphoneOutputAdded = false
         }
         DispatchQueue.main.async { [self] in
             let picker = SCContentSharingPicker.shared
@@ -64,17 +67,50 @@ public final class ScreenCaptureKitEngine: NSObject, CaptureEngine, SCContentSha
     }
 
     public func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
-        let (s, g, alreadyRunning) = lock.withLock { () -> (CaptureEventSink?, Int, Bool) in
-            let running = self.stream != nil
-            if !running { self.filter = filter }
-            return (sink, generation, running)
+        let (s, g, running) = lock.withLock { () -> (CaptureEventSink?, Int, SCStream?) in
+            self.filter = filter
+            return (sink, generation, self.stream)
         }
-        // A selection change while capturing would redefine scope: treat as a new epoch (T05).
-        if alreadyRunning {
-            for source in SourceKind.allCases { s?(g, .formatChanged(source)) }
+        guard let running else {
+            s?(g, .selectionAccepted(microphoneEnabled: filter.isMicrophoneEnabled))
+            s?(g, .scopeChanged(Self.scope(of: filter)))
             return
         }
-        s?(g, .selectionAccepted(microphoneEnabled: filter.isMicrophoneEnabled))
+        // The picker can still change the selection while capturing (device test 1: the recording
+        // began with the picker on screen). The system applies the new selection to the stream
+        // (updateContentFilter is not declared for iOS); a new scope is a new epoch (T05), and a
+        // microphone turned on now gets its output instead of being ignored.
+        s?(g, .scopeChanged(Self.scope(of: filter)))
+        for source in SourceKind.allCases { s?(g, .formatChanged(source)) }
+        if filter.isMicrophoneEnabled { addMicrophoneOutput(to: running) }
+    }
+
+    /// Display scope can include another app's call; a single application or window cannot.
+    /// (The application style constant is unavailable on iOS, so anything else counts as one app.)
+    static func scope(of filter: SCContentFilter) -> CaptureScope {
+        switch filter.style {
+        case .display: .entireScreen
+        case SCShareableContentStyle.none: .unknown
+        default: .singleApp
+        }
+    }
+
+    /// Adds the microphone output once, activating the audio session it needs in the background.
+    private func addMicrophoneOutput(to stream: SCStream) {
+        let needed = lock.withLock { () -> Bool in
+            guard !microphoneOutputAdded, contract?.policy(for: .microphone) != nil else { return false }
+            microphoneOutputAdded = true
+            return true
+        }
+        guard needed else { return }
+        activateAudioSession()
+        do {
+            try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: audioQueue)
+        } catch {
+            lock.withLock { microphoneOutputAdded = false }
+            let (s, g) = lock.withLock { (sink, generation) }
+            s?(g, .formatChanged(.microphone))
+        }
     }
 
     public func contentSharingPickerStartDidFailWithError(_ error: any Error) {
@@ -105,7 +141,10 @@ public final class ScreenCaptureKitEngine: NSObject, CaptureEngine, SCContentSha
                 try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
             }
             if wantsAppAudio { try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue) }
-            if wantsMic { try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: audioQueue) }
+            if wantsMic {
+                try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: audioQueue)
+                lock.withLock { microphoneOutputAdded = true }
+            }
             lock.withLock { self.stream = stream }
             observeAudioSessionNotifications()
             try await stream.startCapture()
@@ -226,13 +265,17 @@ public final class ScreenCaptureKitEngine: NSObject, CaptureEngine, SCContentSha
     /// (e.g. defaultToSpeaker) are used. `mixWithOthers` avoids
     /// interrupting another app's audio; the effect on a live call is assessed in P14 (section 9).
     private func activateAudioSession() {
+        guard !lock.withLock({ audioSessionActive }) else { return }
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playAndRecord, mode: .default, options: [.mixWithOthers, .allowBluetoothHFP])
         try? session.setActive(true)
+        lock.withLock { audioSessionActive = true }
     }
 
     private func deactivateAudioSession() {
+        guard lock.withLock({ audioSessionActive }) else { return }
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        lock.withLock { audioSessionActive = false }
     }
 
     private func observeAudioSessionNotifications() {
