@@ -1,4 +1,5 @@
 import XCTest
+import Vision
 
 /// Simulator UI flows with explicitly simulated capture (DEBUG launch arguments). Results are
 /// SIMULATOR_TESTED only: they say nothing about real call audio or device behaviour.
@@ -275,33 +276,40 @@ final class CallCaptureUITests: XCTestCase {
 
     /// Runs an audit and records every issue's details so failures are diagnosable.
     /// Only system-owned controls (tab bar, search field) are excluded; app content never is.
-    /// The handler captures nothing but `screen` (it is sent across isolation regions); evidence that
-    /// needs `app` is collected after a failed audit instead.
+    /// The handler captures nothing but `screen` (it is sent across isolation regions).
     private func audit(_ app: XCUIApplication, _ screen: String, _ types: XCUIAccessibilityAuditType) throws {
-        // Unhandled issues may be recorded as test failures rather than thrown; detect both.
-        let failuresBefore = testRun?.totalFailureCount ?? 0
-        do {
-            try app.performAccessibilityAudit(for: types) { issue in
-                let element = issue.element
-                let type = element.map { String(describing: $0.elementType) } ?? "none"
-                print("AUDIT[\(screen)] type=\(issue.auditType.rawValue) desc=\(issue.compactDescription) element=\(type) id=\(element?.identifier ?? "") label=\(element?.label ?? "")")
-                print("AUDIT[\(screen)] detail=\(issue.detailedDescription)")
-                return element?.elementType == .tabBar || element?.elementType == .searchField
-            }
-        } catch {
-            recordAuditEvidence(app, screen)
-            throw error
+        // Tests stop at the first failure, so evidence is recorded before the audit, not after it.
+        recordScreenText(app, screen)
+        try app.performAccessibilityAudit(for: types) { issue in
+            let element = issue.element
+            let type = element.map { String(describing: $0.elementType) } ?? "none"
+            print("AUDIT[\(screen)] type=\(issue.auditType.rawValue) desc=\(issue.compactDescription) element=\(type) id=\(element?.identifier ?? "") label=\(element?.label ?? "")")
+            print("AUDIT[\(screen)] detail=\(issue.detailedDescription)")
+            return element?.elementType == .tabBar || element?.elementType == .searchField
         }
-        if (testRun?.totalFailureCount ?? 0) > failuresBefore { recordAuditEvidence(app, screen) }
     }
 
-    /// Element detection matches on-screen text to elements; record which text elements exist and
-    /// where, plus the screen, so text that matches none of them can be found.
-    private func recordAuditEvidence(_ app: XCUIApplication, _ screen: String) {
-        print("AUDIT[\(screen)] window=\(app.windows.firstMatch.frame)")
+    /// Element detection compares text read from the screen with accessibility elements. Record both
+    /// sides — text recognised in a screenshot (Vision OCR) and every static text element's frame —
+    /// so text that matches no element can be named from the log (F-UX08-01).
+    private func recordScreenText(_ app: XCUIApplication, _ screen: String) {
+        let shot = app.screenshot()
+        let window = app.windows.firstMatch.frame
+        print("AUDIT[\(screen)] window=\(window)")
         for text in app.staticTexts.allElementsBoundByIndex.prefix(60) where text.exists {
-            print("AUDIT[\(screen)] text frame=\(text.frame) label=\(text.label.prefix(60))")
+            print("AUDIT[\(screen)] element frame=\(text.frame) label=\(text.label.prefix(60))")
         }
-        screenshot(app, "audit-\(screen)-failed")
+        guard let image = shot.image.cgImage else { return }
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        try? VNImageRequestHandler(cgImage: image).perform([request])
+        for observation in request.results ?? [] {
+            guard let text = observation.topCandidates(1).first?.string else { continue }
+            // Vision boxes are normalised with a bottom-left origin; convert to window points.
+            let b = observation.boundingBox
+            let frame = CGRect(x: b.minX * window.width, y: (1 - b.maxY) * window.height,
+                               width: b.width * window.width, height: b.height * window.height).integral
+            print("AUDIT[\(screen)] ocr frame=\(frame) text=\(text.prefix(60))")
+        }
     }
 }
