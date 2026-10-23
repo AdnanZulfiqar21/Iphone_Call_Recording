@@ -27,6 +27,11 @@ jobs:
           find $F/ActivityKit.framework -name "arm64e-apple-ios.swiftinterface" | head -1 | xargs -I{} cp {} out/ActivityKit.swiftinterface || true
           grep -n "Info.plist\|NSScreenCapture\|UsageDescription\|UIBackgroundModes" -r out/SCK-headers out/SCK.swiftinterface | head -50 > out/plist-hints.txt || true
           ls -la out
+      - name: Print ScreenCaptureKit declarations used by the capture engine (job log keeps them)
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          H=$SDK/System/Library/Frameworks/ScreenCaptureKit.framework/Headers
+          grep -n -i -E "microphone|captureMicrophone|PickerMode|allowedPicker|excluded|capturesAudio|excludesCurrentProcessAudio|API_AVAILABLE\(ios|SCContentSharingPickerConfiguration|showsMicrophone" $H/*.h | grep -v "^\s*$" | head -150
       - uses: actions/upload-artifact@v4
         with:
           name: sdk-interfaces-ios27
