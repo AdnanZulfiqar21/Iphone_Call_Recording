@@ -91,7 +91,8 @@ jobs:
           set -o pipefail
           KEY="$RUNNER_TEMP/AuthKey.p8"
           trap 'rm -f "$KEY"' EXIT   # the key never outlives this step, even on failure
-          printf '%s' "$ASC_KEY_P8" > "$KEY"
+          python3 scripts/write_asc_key.py "$KEY"
+          openssl pkey -in "$KEY" -noout 2>/dev/null || { echo "::error::ASC_KEY_P8 decodes but is not a valid private key; re-download or regenerate the API key"; exit 1; }
           AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
           xcodebuild archive -project CallCapture.xcodeproj -scheme CallCapture -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/CallCapture.xcarchive" \
