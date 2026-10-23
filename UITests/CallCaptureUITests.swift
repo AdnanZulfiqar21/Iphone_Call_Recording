@@ -260,13 +260,20 @@ final class CallCaptureUITests: XCTestCase {
 
     // UX08: automated accessibility audit of primary screens.
     func testAccessibilityAudit() throws {
-        let app = launch(["-UITestSeedLibrary", "8", "-UITestScenario", "normal"])
+        // Five rows fit above the floating tab bar. With more, a row partly behind the tab bar shows a
+        // clipped slice of its title (OCR read "Supr"), which element detection cannot match to the
+        // row's element and reports intermittently (F-UX08-01). Long libraries are covered by
+        // testLargeLibrarySearchFilter.
+        let app = launch(["-UITestSeedLibrary", "5", "-UITestScenario", "normal"])
         XCTAssertTrue(app.buttons["startButton"].waitForExistence(timeout: 10))
         try audit(app, "Record", [.dynamicType, .elementDetection, .hitRegion, .sufficientElementDescription])
         app.tabBars.buttons["Recordings"].tap()
         // Audit the settled screen, not a list that is still populating.
         XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10))
         sleep(1)
+        let lastRow = app.cells.allElementsBoundByIndex.last?.frame ?? .zero
+        XCTAssertLessThanOrEqual(lastRow.maxY, app.tabBars.firstMatch.frame.minY,
+                                 "audit premise: no row is partly hidden behind the tab bar")
         try audit(app, "Recordings", [.dynamicType, .elementDetection, .hitRegion])
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
@@ -298,6 +305,9 @@ final class CallCaptureUITests: XCTestCase {
         print("AUDIT[\(screen)] window=\(window)")
         for text in app.staticTexts.allElementsBoundByIndex.prefix(60) where text.exists {
             print("AUDIT[\(screen)] element frame=\(text.frame) label=\(text.label.prefix(60))")
+        }
+        for button in app.buttons.allElementsBoundByIndex.prefix(40) where button.exists {
+            print("AUDIT[\(screen)] button frame=\(button.frame) label=\(button.label.prefix(60))")
         }
         guard let image = shot.image.cgImage else { return }
         let request = VNRecognizeTextRequest()

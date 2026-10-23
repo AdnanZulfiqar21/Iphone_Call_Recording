@@ -39,12 +39,13 @@ Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 | 2026-10-01 | run 36879541190 (`9a15778`) | `xcode-27` | Focused dispatch: audit + layouts + contrast + Release + audit | all jobs green |
 | 2026-10-01 | run 36885459935 (`cfe1ab3`, `main`) | `xcode-27` | Full app job | FAIL: T16 duration (intermittent) and F-UX08-01 audit; layouts, contrast, Release build, release audit PASS; issue details lost when artifacts expired |
 | 2026-10-23 | run 39896552152 (`4281f7f`) | `xcode-27` | Full app job after writer fix | 11/11 app-hosted tests PASS incl. **T16** (0 samples dropped) and T06 (hole → new part `microphone.e1`); 15/16 UI tests (audit F-UX08-01 failed); small/large layouts, Increase Contrast, Release build, release audit 19/19 PASS |
+| 2026-10-23 | runs 39924328190, 39929721266 (`20192e0`, `c3c81f5`) | `xcode-27` | Full app job after simulator cleanup | Release build 53–54 s (two earlier jobs lost there); layouts, Increase Contrast, Release build, audit PASS; only F-UX08-01 failed — evidence captured |
 
 ## Open findings (author-side)
 
 | ID | Severity | Finding | Status |
 |---|---|---|---|
-| F-UX08-01 | SEV-3 | Accessibility audit intermittently flags "Potentially inaccessible text" on Recordings (4 of 10 runs, also on `main`) | OPEN — run 39896552152 captured it: type 2 (element detection, OCR-based), **no element** attached, so the text on screen matches no accessibility element. Next run prints the detailed description, every text element's frame and a screenshot when this happens |
+| F-UX08-01 | SEV-3 | Accessibility audit intermittently flagged "Potentially inaccessible text" on Recordings (5 of 12 runs, also on `main`) | ROOT CAUSE FOUND (run 39929721266, OCR vs element evidence): with 8 seeded rows the 7th row sits partly behind the floating tab bar; the visible slice of its title is read as "Supr"/"Oct 2", which element detection cannot match to the row's element. Every other on-screen text matched an element. Not a missing element in the app. Test now audits a 5-row library and asserts no row is under the tab bar; long lists stay covered by `testLargeLibrarySearchFilter`. FIX PUSHED — awaiting CI |
 | F-T16-01 | SEV-2 | T16 intermittently assembled a shorter file than fed. Test abandoned a sample after 1 s of backpressure; the writer had already advanced `lastAudioEnd` for it, so the hole was closed up instead of starting a new part. Same gap existed in production for writer-rejected samples | FIXED — writer restores `lastAudioEnd` on rejection; tests wait like the pipeline (bounded 10 s) and fail with counts, durations and segment ranges; T16 PASS in run 39896552152 |
 
 ## Defects found and fixed during non-device verification
