@@ -1,7 +1,7 @@
 name: Device build
 # Builds the Release app for a physical iPhone (P13/P14, docs/execution/DEVICE_TESTING.md).
 # - unsigned-ipa: on every code push; an IPA to re-sign and install with your own Apple ID.
-# - signed-ipa: manual only, in the protected `signing` environment (roadmap section 20).
+# - signed-ipa: manual only, in the protected `Call Recording Application` environment (roadmap section 20).
 #   Default: archive, sign and upload to TestFlight. Start it from the Actions tab, or by pushing
 #   a `testflight-*` tag (works before this file reaches the default branch).
 on:
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       signed:
-        description: "Also produce a signed IPA (needs the signing environment secrets)"
+        description: "Also produce a signed IPA (needs the Call Recording Application environment secrets)"
         type: boolean
         default: false
       export_method:
@@ -67,7 +67,7 @@ jobs:
     if: (github.event_name == 'workflow_dispatch' && inputs.signed) || startsWith(github.ref, 'refs/tags/testflight-')
     runs-on: xcode-27
     timeout-minutes: 40
-    environment: signing
+    environment: Call Recording Application
     env:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -81,7 +81,7 @@ jobs:
           missing=""
           for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do [ -n "${!v}" ] || missing="$missing $v"; done
           if [ -n "$missing" ]; then
-            echo "::error::DISTRIBUTION_BLOCKED (BLOCKERS B01): missing secrets in the 'signing' environment:$missing"
+            echo "::error::DISTRIBUTION_BLOCKED (BLOCKERS B01): missing secrets in the 'Call Recording Application' environment:$missing"
             exit 1
           fi
       - name: Install XcodeGen

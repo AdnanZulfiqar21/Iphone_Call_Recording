@@ -4,7 +4,7 @@ Items here need the owner's access, hardware, accounts or a decision. Unrelated 
 
 | ID | Needed from owner | What it blocks | Status |
 |---|---|---|---|
-| B01 | Apple Developer Program membership, App Store Connect app record, final bundle identifier (currently provisional `com.adnanzulfiqar.callcapture`), signing approach (local Mac or CI with protected secrets) | P13 signed archive, TestFlight (M2) | OPEN — owner has an Apple Developer account (23 Oct 2026); signed TestFlight workflow ready (`device-build.yml`); waiting on the `signing` environment secrets, app record and bundle-ID confirmation — steps in `docs/execution/DEVICE_TESTING.md` |
+| B01 | Apple Developer Program membership, App Store Connect app record, final bundle identifier (currently provisional `com.adnanzulfiqar.callcapture`), signing approach (local Mac or CI with protected secrets) | P13 signed archive, TestFlight (M2) | OPEN — owner has an Apple Developer account (23 Oct 2026); signed TestFlight workflow ready (`device-build.yml`); environment `Call Recording Application` secrets added by owner (23 Oct 2026); waiting on, app record and bundle-ID confirmation — steps in `docs/execution/DEVICE_TESTING.md` |
 | B02 | Physical iPhone on iOS 27 plus willing test participants for WhatsApp/FaceTime calls (speaker and AirPods) | P14 device validation (M3) | OPEN — by design after M1 + M2 |
 | B03 | Independent reviewer (Cursor) access to the repository | Independent acceptance of P00–P12 | OPEN — recorded as INDEPENDENT_REVIEW_PENDING; does not block development |
 | B04 | Pro product decision: price tier and final product ID (`com.adnanzulfiqar.callcapture.pro` is provisional) | App Store Connect in-app purchase setup (P13/P16) | OPEN — StoreKit test configuration used until then |

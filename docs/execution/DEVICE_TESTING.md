@@ -21,7 +21,7 @@ Requirement: the iPhone must run **iOS 27** (deployment target; ScreenCaptureKit
    registers it — then create the app record and run again.
    If you want a different final bundle ID (BLOCKERS B01), say so before the first upload;
    it changes `project.yml` for the app and the `.widgets` extension.
-4. **GitHub secrets.** Repository → Settings → Environments → **New environment** `signing`
+4. **GitHub secrets.** Repository → Settings → Environments → **New environment** `Call Recording Application`
    (optionally add yourself as required reviewer), then add environment secrets:
 
    | Secret | Value |
@@ -67,7 +67,7 @@ inconclusive — is recorded against the exact build in `BUILD_RECORD.txt`.
 
 | Symptom in the run log | Cause / fix |
 |---|---|
-| `DISTRIBUTION_BLOCKED … missing secrets` | Step 4 incomplete or secrets added to the repository instead of the `signing` environment |
+| `DISTRIBUTION_BLOCKED … missing secrets` | Step 4 incomplete or secrets added to the repository instead of the `Call Recording Application` environment |
 | `No profiles for 'com.adnanzulfiqar.callcapture'` / cannot create certificate | API key access is not Admin, or the bundle ID belongs to another team |
 | Upload: `No suitable application records were found` | App record (step 3) missing or bundle ID differs |
 | Upload: `The bundle version must be higher` | Re-run: the build number is the workflow run number and always increases |
