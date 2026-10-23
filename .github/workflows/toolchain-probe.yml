@@ -32,6 +32,11 @@ jobs:
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           H=$SDK/System/Library/Frameworks/ScreenCaptureKit.framework/Headers
           grep -n -i -E "microphone|captureMicrophone|PickerMode|allowedPicker|excluded|capturesAudio|excludesCurrentProcessAudio|API_AVAILABLE\(ios|SCContentSharingPickerConfiguration|showsMicrophone" $H/*.h | grep -v "^\s*$" | head -150
+          echo "===== SCStream.h: SCContentFilter and SCStream (iOS-available lines) ====="
+          awk 'NR>=100 && NR<=260' $H/SCStream.h | grep -v "API_UNAVAILABLE(ios" | grep -E "@property|^- |^\+ |@interface|@abstract" | head -80
+          grep -n -E "updateContentFilter|updateConfiguration|addStreamOutput|removeStreamOutput|style|SCShareableContentStyle|contentRect|includedApplications|includedDisplays" $H/SCStream.h $H/SCShareableContent.h | grep -v "API_UNAVAILABLE(ios" | head -40
+          echo "===== SCContentSharingPicker.h (iOS-available lines) ====="
+          grep -v "API_UNAVAILABLE(ios" $H/SCContentSharingPicker.h | grep -E "@property|^- |^\+ |@protocol|@abstract|@discussion" | head -80
       - uses: actions/upload-artifact@v4
         with:
           name: sdk-interfaces-ios27
