@@ -1,0 +1,133 @@
+name: Device build
+# Builds the Release app for a physical iPhone (P13/P14, docs/execution/DEVICE_TESTING.md).
+# - unsigned-ipa: on every code push; an IPA to re-sign and install with your own Apple ID.
+# - signed-ipa: manual only, in the protected `signing` environment (roadmap section 20).
+#   Default: archive, sign and upload to TestFlight. Start it from the Actions tab, or by pushing
+#   a `testflight-*` tag (works before this file reaches the default branch).
+on:
+  push:
+    branches: [main, 'phase/**']
+    tags: ['testflight-*']
+    paths-ignore: ['docs/**', '**/*.md']
+  workflow_dispatch:
+    inputs:
+      signed:
+        description: "Also produce a signed IPA (needs the signing environment secrets)"
+        type: boolean
+        default: false
+      export_method:
+        description: "app-store-connect uploads to TestFlight; release-testing = ad hoc IPA for registered devices; debugging = development IPA"
+        type: choice
+        options: [app-store-connect, release-testing, debugging]
+        default: app-store-connect
+concurrency:
+  group: device-build-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  DEVELOPER_DIR: /Applications/Xcode_27.app/Contents/Developer
+
+jobs:
+  unsigned-ipa:
+    name: Unsigned Release IPA (Xcode 27)
+    runs-on: xcode-27
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen && xcodegen generate
+      - name: Release build for iOS devices
+        run: |
+          set -o pipefail
+          # The build number only ever increases: it is this workflow's run number.
+          xcodebuild build -project CallCapture.xcodeproj -scheme CallCapture -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath /tmp/dd-device CODE_SIGNING_ALLOWED=NO \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            2>&1 | tee device-build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" device-build.log
+      - name: Release audit (same checks as CI)
+        run: bash scripts/release_audit.sh /tmp/dd-device/Build/Products/Release-iphoneos/CallCapture.app | tee release-audit.log
+      - name: Package IPA with build record
+        run: bash scripts/package_ipa.sh /tmp/dd-device/Build/Products/Release-iphoneos/CallCapture.app CallCapture-unsigned.ipa unsigned
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CallCapture-unsigned-ipa-${{ github.run_number }}
+          path: |
+            CallCapture-unsigned.ipa
+            BUILD_RECORD.txt
+            release-audit.log
+          retention-days: 30
+
+  signed-ipa:
+    name: Signed build — TestFlight upload or IPA (manual, protected environment)
+    if: (github.event_name == 'workflow_dispatch' && inputs.signed) || startsWith(github.ref, 'refs/tags/testflight-')
+    runs-on: xcode-27
+    timeout-minutes: 40
+    environment: signing
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      EXPORT_METHOD: ${{ inputs.export_method || 'app-store-connect' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check signing secrets
+        run: |
+          missing=""
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do [ -n "${!v}" ] || missing="$missing $v"; done
+          if [ -n "$missing" ]; then
+            echo "::error::DISTRIBUTION_BLOCKED (BLOCKERS B01): missing secrets in the 'signing' environment:$missing"
+            exit 1
+          fi
+      - name: Install XcodeGen
+        run: brew install xcodegen && xcodegen generate
+      - name: Archive with automatic signing (App Store Connect API key)
+        run: |
+          set -o pipefail
+          KEY="$RUNNER_TEMP/AuthKey.p8"
+          trap 'rm -f "$KEY"' EXIT   # the key never outlives this step, even on failure
+          printf '%s' "$ASC_KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild archive -project CallCapture.xcodeproj -scheme CallCapture -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/CallCapture.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            "${AUTH[@]}" 2>&1 | tee archive.log | grep -E "error:|ARCHIVE (SUCCEEDED|FAILED)" || true
+          grep -q "ARCHIVE SUCCEEDED" archive.log
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>$EXPORT_METHOD</string>
+            <key>destination</key><string>$([ "$EXPORT_METHOD" = app-store-connect ] && echo upload || echo export)</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/CallCapture.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}" 2>&1 | tee export.log
+      - name: Release audit on the signed app and build record
+        run: |
+          APP="$RUNNER_TEMP/CallCapture.xcarchive/Products/Applications/CallCapture.app"
+          bash scripts/release_audit.sh "$APP" | tee release-audit.log
+          codesign -dv --verbose=2 "$APP" 2>&1 | grep -E "Identifier|TeamIdentifier|Authority" | tee -a release-audit.log
+          bash scripts/package_ipa.sh "$APP" - "signed, $EXPORT_METHOD"
+          if [ "$EXPORT_METHOD" = app-store-connect ]; then
+            echo "Delivery:       uploaded to App Store Connect; appears in TestFlight after processing" | tee -a BUILD_RECORD.txt
+          else
+            cp "$RUNNER_TEMP"/export/*.ipa CallCapture-signed.ipa
+            echo "IPA SHA-256:    $(shasum -a 256 CallCapture-signed.ipa | cut -d' ' -f1)" | tee -a BUILD_RECORD.txt
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CallCapture-signed-ipa-${{ github.run_number }}
+          if-no-files-found: ignore
+          path: |
+            CallCapture-signed.ipa
+            BUILD_RECORD.txt
+            release-audit.log
+            archive.log
+            export.log
+          retention-days: 30

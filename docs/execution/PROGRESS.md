@@ -20,7 +20,7 @@ Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 | P10 Privacy, security, accessibility | DONE | Contrast 32/32 (`docs/ux/contrast-report.md`); release audit 18/18; accessibility audit PASS; RTL run PASS | PENDING | DEFERRED_TO_P14 |
 | P11 Commercial V1 | DONE — StoreKit 2, honest Pro scope (technical report, extra sorting) | Entitlement tests PASS; Pro screen UI test PASS | PENDING | DEFERRED_TO_P14 |
 | P12 Complete build & audit (M1) | IMPLEMENTATION COMPLETE — see `docs/execution/M1_BUILD_AUDIT.md` | Non-device gates executed (above); UX gate in `docs/ux/ui-acceptance.md` | **INDEPENDENT_REVIEW_PENDING → M1 not yet accepted** | DEVICE_EVIDENCE_PENDING |
-| P13 Signing / TestFlight (M2) | BLOCKED — owner access (B01) | — | — | — |
+| P13 Signing / TestFlight (M2) | IN PROGRESS — `device-build.yml`: unsigned Release IPA on every push; manual signed archive → TestFlight upload (or ad hoc IPA) via App Store Connect API key in the protected `signing` environment | Unsigned IPA job: awaiting first run. Signed job: not run — needs owner secrets (B01, `DEVICE_TESTING.md`) | — | — |
 | P14–P16 | NOT STARTED (by design after M1/M2) | — | — | — |
 
 ## Test evidence log
