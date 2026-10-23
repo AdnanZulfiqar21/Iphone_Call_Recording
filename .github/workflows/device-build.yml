@@ -27,6 +27,9 @@ permissions:
   contents: read
 env:
   DEVELOPER_DIR: /Applications/Xcode_27.app/Contents/Developer
+defaults:
+  run:
+    shell: bash   # -eo pipefail: a failing audit piped into tee fails the step
 
 jobs:
   unsigned-ipa:

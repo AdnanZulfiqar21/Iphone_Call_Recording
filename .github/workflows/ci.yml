@@ -142,6 +142,7 @@ jobs:
           grep -q "BUILD SUCCEEDED" release-build.log
       - name: Release audit (no test doubles, plist, privacy manifest)
         if: always()
+        shell: bash   # -eo pipefail: an audit failure must not be hidden by tee
         run: bash scripts/release_audit.sh /tmp/dd-release/Build/Products/Release-iphoneos/CallCapture.app | tee release-audit.log
       - name: Export screenshots from test results
         if: always()
