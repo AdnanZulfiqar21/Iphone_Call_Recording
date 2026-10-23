@@ -37,14 +37,18 @@ Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 | 2026-10-01 | run 36856930397 (`990f664`) | `xcode-27` | Full app job after writer race fix (T16 found it) | 11/11 + 16/16 + layouts + contrast + Release + audit PASS; job hit 90-min limit at upload |
 | 2026-10-01 | run 36867785513 (`d7b2ddf`) | `xcode-27` | Full app job | all PASS except intermittent accessibility-audit flag (F-UX08-01) |
 | 2026-10-01 | run 36879541190 (`9a15778`) | `xcode-27` | Focused dispatch: audit + layouts + contrast + Release + audit | all jobs green |
+| 2026-10-01 | run 36885459935 (`cfe1ab3`, `main`) | `xcode-27` | Full app job | FAIL: T16 duration (intermittent) and F-UX08-01 audit; layouts, contrast, Release build, release audit PASS; issue details lost when artifacts expired |
 
 ## Open findings (author-side)
 
 | ID | Severity | Finding | Status |
 |---|---|---|---|
-| F-UX08-01 | SEV-3 | Accessibility audit intermittently flags "Potentially inaccessible text" on Recordings (2 of 7 runs); element not yet captured | OPEN — per-issue logging added; reviewer to confirm |
+| F-UX08-01 | SEV-3 | Accessibility audit intermittently flags "Potentially inaccessible text" on Recordings (3 of 8 runs); element not yet captured | OPEN — `AUDIT[...]` issue lines now printed in the CI job log itself (artifacts expire after 7 days) |
+| F-T16-01 | SEV-2 | T16 intermittently assembled a shorter file than fed. Test abandoned a sample after 1 s of backpressure; the writer had already advanced `lastAudioEnd` for it, so the hole was closed up instead of starting a new part. Same gap existed in production for writer-rejected samples | FIX PUSHED — writer restores `lastAudioEnd` on rejection; tests wait like the pipeline (bounded 10 s) and fail with counts, durations and segment ranges; awaiting CI |
 
 ## Defects found and fixed during non-device verification
+
+- Writer: a rejected audio sample advanced the discontinuity clock, so the hole it left could be closed up in the part — the next accepted sample now starts a new part (F-T16-01).
 
 - Writer: early-closed track part could miss its tail at Stop (race) — fixed (`990f664`).
 - Validator: holes rendered as silence by decoders were missed — now read from edit segments.

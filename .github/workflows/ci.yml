@@ -92,7 +92,7 @@ jobs:
           xcodebuild test -collect-test-diagnostics never $ONLY -project CallCapture.xcodeproj -scheme CallCapture -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult -derivedDataPath /tmp/dd-app CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* " || true
+            2>&1 | tee app-test.log | grep -E "error:|Test Case .* (passed|failed)|Executed|✔|✘|TEST (SUCCEEDED|FAILED)|\*\* |AUDIT\[|\[media-test\]" || true
           grep -q "TEST SUCCEEDED" app-test.log
       - name: Smallest and largest screen layout runs (UX02)
         if: always()
