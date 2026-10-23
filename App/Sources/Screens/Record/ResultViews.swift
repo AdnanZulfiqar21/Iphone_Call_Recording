@@ -62,6 +62,9 @@ struct SavedResultView: View {
                         .buttonStyle(ActionButtonStyle(style: .tinted))
                     }
                 }
+                if metadata.contract.mode != .audioOnly, let url = model.masterURL(metadata.id) {
+                    SaveToPhotosButton(url: url, prominent: true)
+                }
                 if metadata.hasKnownGaps {
                     Button("Review missing sections") { openPlayer = true }
                         .frame(minHeight: DS.Size.minimumTarget)

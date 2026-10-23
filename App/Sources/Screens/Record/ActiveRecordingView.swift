@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CallCaptureCore
 
 /// Active recording hierarchy (section 14.5):
@@ -19,6 +20,9 @@ struct ActiveRecordingView: View {
                     header(s)
                     if s.lifecycle == .awaitingUserSelection || s.lifecycle == .preparing {
                         InlineNotice(text: String(localized: "Choose what to share in the iOS sheet. Nothing is recorded until you confirm."), tone: .accent)
+                        InlineNotice(text: String(localized: "To record a call, choose Share Entire Screen and keep Microphone on. Sharing only CallCapture records just this app."),
+                                     tone: .accent)
+                            .accessibilityIdentifier("pickerGuidance")
                     } else {
                         sources(s)
                         notices(s)
@@ -103,6 +107,17 @@ struct ActiveRecordingView: View {
     }
 
     @ViewBuilder private func notices(_ s: SessionSnapshot) -> some View {
+        if s.captureScope == .singleApp && (s.lifecycle == .capturing || s.lifecycle == .starting) {
+            // Device test 1: sharing only CallCapture gave video of this app and silent app audio.
+            InlineNotice(text: String(localized: "Only one app is being shared, so a call in another app won't be recorded. Stop, then start again and choose Share Entire Screen."))
+                .accessibilityIdentifier("singleAppNotice")
+        }
+        if model.microphonePermissionDenied && s.contract?.policy(for: .microphone) != nil && s.lifecycle == .capturing {
+            InlineNotice(text: String(localized: "Microphone access is off for CallCapture, so your voice isn't recorded. Turn it on in Settings › Privacy & Security › Microphone."),
+                         actionTitle: String(localized: "Open Settings")) {
+                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+            }
+        }
         // Persistent: an earlier gap stays visible after the source resumes (rule 15).
         ForEach(StatusPresenter.persistentNotices(s.anomalies), id: \.self) { notice in
             InlineNotice(text: StatusCopy.text(notice.message))

@@ -47,6 +47,22 @@ struct SessionControllerTests {
         }
     }
 
+    @Test("The picker's sharing scope reaches the snapshot and resets for the next session")
+    func captureScopeIsReported() async throws {
+        let h = try harness()
+        h.engine.scope = .singleApp
+        await h.controller.record(contract: screenMicContract, title: "Only this app")
+        #expect(await eventually { await h.controller.snapshot().captureScope == .singleApp })
+        feed(h, from: 0, to: 2)
+        await h.controller.stop()
+        #expect(await eventually { await lifecycle(h) == .finalized })
+        await h.controller.acknowledgeResult()
+        #expect(await eventually { await lifecycle(h) == .idle })
+        h.engine.scope = .entireScreen
+        await h.controller.record(contract: screenMicContract, title: "Whole screen")
+        #expect(await eventually { await h.controller.snapshot().captureScope == .entireScreen })
+    }
+
     @Test("Normal record → stop → saved with no known gaps")
     func happyPath() async throws {
         let h = try harness()

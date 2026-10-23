@@ -23,6 +23,8 @@ public final class SyntheticCaptureEngine: CaptureEngine, @unchecked Sendable {
     /// Builds real media payloads (e.g. CMSampleBuffers) when the media layer provides one.
     public var payloadFactory: (@Sendable (SampleObservation) -> (any SamplePayload)?)?
     public var isAvailable: Bool = true
+    /// Sharing scope reported after an accepted selection (as the ScreenCaptureKit engine does).
+    public var scope: CaptureScope = .entireScreen
     public private(set) var startCount = 0
     public private(set) var stopCount = 0
 
@@ -38,7 +40,9 @@ public final class SyntheticCaptureEngine: CaptureEngine, @unchecked Sendable {
         let response = pickerResponse
         lock.unlock()
         switch response {
-        case .accept(let mic): sink(generation, .selectionAccepted(microphoneEnabled: mic))
+        case .accept(let mic):
+            sink(generation, .selectionAccepted(microphoneEnabled: mic))
+            sink(generation, .scopeChanged(lock.withLock { scope }))
         case .cancel: sink(generation, .selectionCancelled)
         case .deny: sink(generation, .permissionDenied)
         case .unsupported: sink(generation, .unsupported("synthetic"))

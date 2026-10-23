@@ -1,6 +1,5 @@
 import SwiftUI
 import AVFoundation
-import Photos
 import UniformTypeIdentifiers
 import CallCaptureCore
 
@@ -64,7 +63,7 @@ struct ExportSheet: View {
                         }
                     }
                     Button { addToPhotos() } label: {
-                        SettingsRow(title: String(localized: "Add to Photos"), systemImage: "photo.on.rectangle",
+                        SettingsRow(title: String(localized: "Save to Photos"), systemImage: "photo.on.rectangle",
                                     detail: String(localized: "Add-only: CallCapture can't see your library"))
                     }
                     .disabled(isBusy || model.isSessionActive || metadata.contract.mode == .audioOnly)
@@ -134,24 +133,11 @@ struct ExportSheet: View {
 
     private func addToPhotos() {
         guard let source = model.masterURL(metadata.id) else { return }
-        status = .preparing(String(localized: "Adding to Photos…"))
+        status = .preparing(String(localized: "Saving to Photos…"))
         exportTask = Task {
-            let auth = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
-            guard auth == .authorized || auth == .limited else {
-                status = .failed(String(localized: "Photos access wasn't allowed. You can change this in Settings."))
-                return
-            }
-            do {
-                try await PHPhotoLibrary.shared().performChanges {
-                    let request = PHAssetCreationRequest.forAsset()
-                    let options = PHAssetResourceCreationOptions()
-                    options.shouldMoveFile = false   // copy: the master stays in CallCapture
-                    request.addResource(with: .video, fileURL: source, options: options)
-                }
-                status = .done(String(localized: "Added to Photos"))
-            } catch {
-                status = .failed(String(localized: "Couldn't add to Photos. The original is unchanged."))
-            }
+            let outcome = await PhotoLibrarySaver.saveVideo(at: source)
+            let text = PhotoLibrarySaver.message(for: outcome)
+            status = outcome == .saved ? .done(text) : .failed(text)
         }
     }
 }

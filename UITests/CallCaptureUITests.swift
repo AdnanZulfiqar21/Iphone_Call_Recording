@@ -248,6 +248,18 @@ final class CallCaptureUITests: XCTestCase {
         XCTAssertTrue(app.buttons["newRecordingButton"].waitForExistence(timeout: 60))
     }
 
+    // Device test 1: sharing only one app (CallCapture) can't record another app's call; say so.
+    func testSingleAppShareIsExplained() {
+        let app = launch(["-UITestScenario", "normal", "-UITestScope", "singleApp"])
+        startRecording(app)
+        XCTAssertTrue(app.buttons["stopButton"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.descendants(matching: .any)["singleAppNotice"].waitForExistence(timeout: 10))
+        screenshot(app, "29-single-app-share")
+        app.buttons["stopButton"].tap()
+        XCTAssertTrue(app.buttons["newRecordingButton"].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.buttons["saveToPhotosButton"].exists, "result screen offers Save to Photos")
+    }
+
     // UX14: right-to-left layout readiness with a pseudo-RTL launch.
     func testRightToLeftLayout() {
         let app = launch(["-UITestSeedLibrary", "6", "-AppleTextDirection", "YES", "-NSForceRightToLeftWritingDirection", "YES"])

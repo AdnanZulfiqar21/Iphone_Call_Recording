@@ -19,6 +19,8 @@ public struct SessionSnapshot: Sendable, Equatable {
     public var canStart: Bool
     public var updatedAt: MonotonicInstant
     public var wallUpdatedAt: Date
+    /// Sharing scope chosen in the picker for this session; nil until reported.
+    public var captureScope: CaptureScope? = nil
 
     public static func idle(now: MonotonicInstant, wall: Date) -> SessionSnapshot {
         SessionSnapshot(lifecycle: .idle, sessionID: nil, generation: 0, contract: nil, elapsed: 0, sources: [],
@@ -89,6 +91,7 @@ public actor SessionController {
     private var firstMediaAt: MonotonicInstant?
     private var stoppedElapsed: Double?
     private var savedRecordingID: UUID?
+    private var captureScope: CaptureScope?
     private var title = ""
     private var governor: ResourceGovernor
     private var ticker: (any ScheduledWork)?
@@ -126,6 +129,7 @@ public actor SessionController {
         firstMediaAt = nil
         stoppedElapsed = nil
         savedRecordingID = nil
+        captureScope = nil
         governor = ResourceGovernor(reserve: StorageReserve.forMode(contract.mode))
         apply(.recordRequested(contract))
     }
@@ -273,6 +277,10 @@ public actor SessionController {
             apply(.captureEnded(reason: reason), generation: generation)
         case .mediaServicesReset:
             apply(.mediaServicesReset, generation: generation)
+        case .scopeChanged(let scope):
+            captureScope = scope
+            deps.diagnostics.record(.lifecycle, session: machine.sessionID, detail: "scope:\(scope.rawValue)")
+            publish()
         }
     }
 
@@ -459,7 +467,8 @@ public actor SessionController {
             elapsed: elapsed, sources: pipeline?.status() ?? [], anomalies: pipeline?.anomalies ?? AnomalyLedger(),
             nonCaptureOutcome: machine.nonCaptureOutcome, finalOutcome: machine.finalOutcome, endReason: machine.captureEndReason,
             savedRecordingID: savedRecordingID, resourceState: governor.state, stopRequested: machine.stopRequested,
-            canStart: machine.canStartNewSession, updatedAt: now, wallUpdatedAt: deps.wallClock.now())
+            canStart: machine.canStartNewSession, updatedAt: now, wallUpdatedAt: deps.wallClock.now(),
+            captureScope: captureScope)
     }
 
     private func publish() {

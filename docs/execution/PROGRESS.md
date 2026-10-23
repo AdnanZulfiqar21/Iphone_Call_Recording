@@ -21,6 +21,7 @@ Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 | P11 Commercial V1 | DONE — StoreKit 2, honest Pro scope (technical report, extra sorting) | Entitlement tests PASS; Pro screen UI test PASS | PENDING | DEFERRED_TO_P14 |
 | P12 Complete build & audit (M1) | IMPLEMENTATION COMPLETE — see `docs/execution/M1_BUILD_AUDIT.md` | Non-device gates executed (above); UX gate in `docs/ux/ui-acceptance.md` | **INDEPENDENT_REVIEW_PENDING → M1 not yet accepted** | DEVICE_EVIDENCE_PENDING |
 | P13 Signing / TestFlight (M2) | DONE for internal TestFlight — `device-build.yml`: signed archive (automatic signing, App Store Connect API key in the protected `Call Recording Application` environment), bundle IDs registered through the API (`scripts/asc_setup.py`), upload | **1.0.0 (16)** from `4281f7f` uploaded to App Store Connect (Device build run 39896555846); signed-app release audit PASS incl. iPhone-only check. Upload 14 was rejected by App Store validation (universal build, portrait only) — fixed. Processing/TestFlight availability: owner to confirm | — | DEVICE_EVIDENCE_PENDING (P14) |
+| P14 Physical iPhone validation | IN PROGRESS — DT-01 run on 1.0.0 (16); findings DT01-1…4 fixed in code (`docs/execution/DEVICE_TEST_LOG.md`) | Fixes compile/test in CI; device re-test DT-02 pending a new TestFlight build | — | DT-01 recorded; DT-02 pending |
 | P14–P16 | NOT STARTED (by design after M1/M2) | — | — | — |
 
 ## Test evidence log
