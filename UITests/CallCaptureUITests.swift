@@ -280,6 +280,17 @@ final class CallCaptureUITests: XCTestCase {
             let element = issue.element
             let type = element.map { String(describing: $0.elementType) } ?? "none"
             print("AUDIT[\(screen)] type=\(issue.auditType.rawValue) desc=\(issue.compactDescription) element=\(type) id=\(element?.identifier ?? "") label=\(element?.label ?? "")")
+            print("AUDIT[\(screen)] detail=\(issue.detailedDescription)")
+            if element == nil {
+                // Element detection matches on-screen text to elements; with no element, record what
+                // text elements exist and where, plus the screen, so the unmatched text can be found.
+                let window = app.windows.firstMatch.frame
+                print("AUDIT[\(screen)] window=\(window)")
+                for text in app.staticTexts.allElementsBoundByIndex.prefix(60) where text.exists {
+                    print("AUDIT[\(screen)] text frame=\(text.frame) label=\(text.label.prefix(60))")
+                }
+                self.screenshot(app, "audit-\(screen)-unmatched-text")
+            }
             return element?.elementType == .tabBar || element?.elementType == .searchField
         }
     }

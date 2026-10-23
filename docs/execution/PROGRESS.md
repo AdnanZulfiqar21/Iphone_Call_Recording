@@ -20,7 +20,7 @@ Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 | P10 Privacy, security, accessibility | DONE | Contrast 32/32 (`docs/ux/contrast-report.md`); release audit 18/18; accessibility audit PASS; RTL run PASS | PENDING | DEFERRED_TO_P14 |
 | P11 Commercial V1 | DONE — StoreKit 2, honest Pro scope (technical report, extra sorting) | Entitlement tests PASS; Pro screen UI test PASS | PENDING | DEFERRED_TO_P14 |
 | P12 Complete build & audit (M1) | IMPLEMENTATION COMPLETE — see `docs/execution/M1_BUILD_AUDIT.md` | Non-device gates executed (above); UX gate in `docs/ux/ui-acceptance.md` | **INDEPENDENT_REVIEW_PENDING → M1 not yet accepted** | DEVICE_EVIDENCE_PENDING |
-| P13 Signing / TestFlight (M2) | IN PROGRESS — `device-build.yml`: unsigned Release IPA on every push; manual signed archive → TestFlight upload (or ad hoc IPA) via App Store Connect API key in the protected `signing` environment | Unsigned IPA job: awaiting first run. Signed job: not run — needs owner secrets (B01, `DEVICE_TESTING.md`) | — | — |
+| P13 Signing / TestFlight (M2) | DONE for internal TestFlight — `device-build.yml`: signed archive (automatic signing, App Store Connect API key in the protected `Call Recording Application` environment), bundle IDs registered through the API (`scripts/asc_setup.py`), upload | **1.0.0 (16)** from `4281f7f` uploaded to App Store Connect (Device build run 39896555846); signed-app release audit PASS incl. iPhone-only check. Upload 14 was rejected by App Store validation (universal build, portrait only) — fixed. Processing/TestFlight availability: owner to confirm | — | DEVICE_EVIDENCE_PENDING (P14) |
 | P14–P16 | NOT STARTED (by design after M1/M2) | — | — | — |
 
 ## Test evidence log
@@ -38,13 +38,14 @@ Four separate statuses per phase (`AUTONOMOUS_BUILD_AUTHORIZATION.md`):
 | 2026-10-01 | run 36867785513 (`d7b2ddf`) | `xcode-27` | Full app job | all PASS except intermittent accessibility-audit flag (F-UX08-01) |
 | 2026-10-01 | run 36879541190 (`9a15778`) | `xcode-27` | Focused dispatch: audit + layouts + contrast + Release + audit | all jobs green |
 | 2026-10-01 | run 36885459935 (`cfe1ab3`, `main`) | `xcode-27` | Full app job | FAIL: T16 duration (intermittent) and F-UX08-01 audit; layouts, contrast, Release build, release audit PASS; issue details lost when artifacts expired |
+| 2026-10-23 | run 39896552152 (`4281f7f`) | `xcode-27` | Full app job after writer fix | 11/11 app-hosted tests PASS incl. **T16** (0 samples dropped) and T06 (hole → new part `microphone.e1`); 15/16 UI tests (audit F-UX08-01 failed); small/large layouts, Increase Contrast, Release build, release audit 19/19 PASS |
 
 ## Open findings (author-side)
 
 | ID | Severity | Finding | Status |
 |---|---|---|---|
-| F-UX08-01 | SEV-3 | Accessibility audit intermittently flags "Potentially inaccessible text" on Recordings (3 of 8 runs); element not yet captured | OPEN — `AUDIT[...]` issue lines now printed in the CI job log itself (artifacts expire after 7 days) |
-| F-T16-01 | SEV-2 | T16 intermittently assembled a shorter file than fed. Test abandoned a sample after 1 s of backpressure; the writer had already advanced `lastAudioEnd` for it, so the hole was closed up instead of starting a new part. Same gap existed in production for writer-rejected samples | FIX PUSHED — writer restores `lastAudioEnd` on rejection; tests wait like the pipeline (bounded 10 s) and fail with counts, durations and segment ranges; awaiting CI |
+| F-UX08-01 | SEV-3 | Accessibility audit intermittently flags "Potentially inaccessible text" on Recordings (4 of 10 runs, also on `main`) | OPEN — run 39896552152 captured it: type 2 (element detection, OCR-based), **no element** attached, so the text on screen matches no accessibility element. Next run prints the detailed description, every text element's frame and a screenshot when this happens |
+| F-T16-01 | SEV-2 | T16 intermittently assembled a shorter file than fed. Test abandoned a sample after 1 s of backpressure; the writer had already advanced `lastAudioEnd` for it, so the hole was closed up instead of starting a new part. Same gap existed in production for writer-rejected samples | FIXED — writer restores `lastAudioEnd` on rejection; tests wait like the pipeline (bounded 10 s) and fail with counts, durations and segment ranges; T16 PASS in run 39896552152 |
 
 ## Defects found and fixed during non-device verification
 
